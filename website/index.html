@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Field Theory CLI — Self-custody for your bookmarks</title>
+  <meta name="description" content="Sync your X/Twitter bookmarks locally. Search, classify, and explore them. Point an agent at them. Free and open source.">
+  <meta name="theme-color" content="#1e1e1e">
+  <link rel="icon" type="image/png" href="images/fieldtheory-logo-white.png">
+  <style>
+    /* ── Variables (from fieldtheory.dev) ─────────────────────────────── */
+    :root {
+      --color-bg: #faf9f7;
+      --color-bg-alt: #f5f4f2;
+      --color-text: #1a1a1a;
+      --color-text-muted: #6b6b6b;
+      --color-accent: #4a7c23;
+      --color-border: #e0e0e0;
+      --color-dots: #d4d4d4;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Fira Code', monospace;
+      --border-radius: 4px;
+    }
+
+    body.dark {
+      --color-bg: #1e1e1e;
+      --color-bg-alt: #2a2a2a;
+      --color-text: #e8e8e8;
+      --color-text-muted: #999999;
+      --color-accent: #7cb342;
+      --color-border: #3a3a3a;
+      --color-dots: #4a4a4a;
+    }
+
+    /* ── Reset ────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+    html, body { overflow: hidden; height: 100vh; }
+
+    body {
+      font-family: var(--font-sans);
+      color: var(--color-text);
+      background: var(--color-bg);
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    a:hover { color: var(--color-accent); }
+
+    /* ── Nav (fieldtheory.dev pattern) ─────────────────────────────────── */
+    .nav {
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .nav-inner {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .nav-logo-img { height: 22px; width: auto; }
+
+    .nav-title {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      transition: color 0.15s;
+    }
+
+    .theme-toggle {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius);
+      padding: 0.3rem 0.5rem;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--color-text);
+      color: var(--color-text);
+    }
+
+    /* ── Main content ─────────────────────────────────────────────────── */
+    .content {
+      flex: 1;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .hero h1 {
+      font-size: 1.6rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.25rem;
+    }
+
+    .hero p {
+      font-size: 0.95rem;
+      color: var(--color-text-muted);
+    }
+
+    /* ── Install box ──────────────────────────────────────────────────── */
+    .install-box {
+      display: flex;
+      align-items: center;
+      background: var(--color-bg-alt);
+      border: 1px solid var(--color-border);
+      border-left: 3px solid var(--color-accent);
+      border-radius: var(--border-radius);
+      padding: 0.75rem 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      gap: 0.75rem;
+    }
+
+    .install-box code {
+      flex: 1;
+      user-select: all;
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius);
+      padding: 0.3rem 0.6rem;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--color-text);
+      color: var(--color-text);
+    }
+
+    /* ── Steps ────────────────────────────────────────────────────────── */
+    .steps {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .step {
+      text-align: center;
+    }
+
+    .step-num {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.25rem;
+    }
+
+    .step-cmd {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--color-text);
+      background: var(--color-bg-alt);
+      border-radius: var(--border-radius);
+      padding: 0.4rem 0.6rem;
+      display: inline-block;
+    }
+
+    /* ── Dotted separator ─────────────────────────────────────────────── */
+    .dotted-line {
+      border: none;
+      border-top: 2px dotted var(--color-dots);
+      margin: 0;
+    }
+
+    /* ── Agent section ────────────────────────────────────────────────── */
+    .agent-section {
+      text-align: center;
+    }
+
+    .agent-quote {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-style: italic;
+      color: var(--color-text);
+      line-height: 1.6;
+      max-width: 500px;
+      margin: 0 auto 0.5rem;
+    }
+
+    .agent-attribution {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+    }
+
+    /* ── Features row ─────────────────────────────────────────────────── */
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+
+    .feature-label {
+      color: var(--color-text-muted);
+      margin-bottom: 0.15rem;
+    }
+
+    .feature-value {
+      color: var(--color-text);
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+
+    /* ── Footer ───────────────────────────────────────────────────────── */
+    .footer {
+      padding: 1rem 0;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .footer-inner {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.25rem;
+      list-style: none;
+    }
+
+    .footer-links a {
+      color: var(--color-text-muted);
+      transition: color 0.15s;
+    }
+
+    .footer-links a:hover { color: var(--color-text); }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 500;
+      padding: 0.15rem 0.4rem;
+      border-radius: 2rem;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-muted);
+    }
+
+    /* ── Responsive ───────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      html, body { overflow: auto; height: auto; }
+      .content { padding: 1.5rem 1rem; }
+      .hero h1 { font-size: 1.3rem; }
+      .steps { grid-template-columns: 1fr; gap: 0.5rem; }
+      .features { grid-template-columns: 1fr; }
+      .nav-title { display: none; }
+    }
+
+    @media (max-height: 700px) {
+      .content { padding: 1.5rem 1.5rem 0.5rem; gap: 1rem; }
+      .hero h1 { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body class="dark">
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-left">
+        <a href="https://fieldtheory.dev">
+          <img id="nav-logo-img" src="images/fieldtheory-logo-white.png" alt="Field Theory" class="nav-logo-img">
+        </a>
+        <span class="nav-title">CLI</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="https://fieldtheory.dev">fieldtheory.dev</a></li>
+        <li><a href="https://github.com/nicholasgasior/fieldtheory-cli">GitHub</a></li>
+        <li><button class="theme-toggle" onclick="toggleTheme()">&#x25D0;</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="content">
+    <div class="hero">
+      <h1>Self-custody for your bookmarks.</h1>
+      <p>Sync your X bookmarks locally. Search them. Classify them. Point an agent at them.</p>
+    </div>
+
+    <div class="install-box">
+      <code id="install-cmd">npm install -g ft-bookmarks</code>
+      <button class="copy-btn" onclick="copyInstall()">copy</button>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1. Install</div>
+        <div class="step-cmd">npm i -g ft-bookmarks</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2. Sync</div>
+        <div class="step-cmd">ft sync</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3. Search</div>
+        <div class="step-cmd">ft search "ai"</div>
+      </div>
+    </div>
+
+    <hr class="dotted-line">
+
+    <div class="agent-section">
+      <p class="agent-quote">"Take my oldest and newest bookmarks and tell me how my interests have changed over time."</p>
+      <p class="agent-attribution">Works with Claude Code, Codex, or any agent with shell access.</p>
+    </div>
+
+    <hr class="dotted-line">
+
+    <div class="features">
+      <div>
+        <div class="feature-label">ft categories</div>
+        <div class="feature-value">tool &middot; security &middot; technique &middot; launch &middot; research &middot; opinion &middot; commerce</div>
+      </div>
+      <div>
+        <div class="feature-label">ft viz</div>
+        <div class="feature-value">sparklines, heatmaps, top authors, weekly pulse</div>
+      </div>
+      <div>
+        <div class="feature-label">crontab</div>
+        <div class="feature-value">0 7 * * * ft sync</div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span>Field Theory CLI &copy; 2026 &nbsp; <span class="badge">MIT</span></span>
+      <ul class="footer-links">
+        <li><a href="https://github.com/nicholasgasior/fieldtheory-cli">GitHub</a></li>
+        <li><a href="https://www.npmjs.com/package/ft-bookmarks">npm</a></li>
+        <li><a href="https://fieldtheory.dev">fieldtheory.dev</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script>
+    // Default to dark mode
+    if (localStorage.getItem('theme') === 'light') {
+      document.body.classList.remove('dark');
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+      const isDark = document.body.classList.contains('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      const logo = document.getElementById('nav-logo-img');
+      if (logo) logo.src = isDark ? 'images/fieldtheory-logo-white.png' : 'images/fieldtheory-logo-black.png';
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', isDark ? '#1e1e1e' : '#faf9f7');
+    }
+
+    // Set logo on load
+    (function() {
+      const isDark = document.body.classList.contains('dark');
+      const logo = document.getElementById('nav-logo-img');
+      if (logo) logo.src = isDark ? 'images/fieldtheory-logo-white.png' : 'images/fieldtheory-logo-black.png';
+    })();
+
+    function copyInstall() {
+      const cmd = document.getElementById('install-cmd').textContent;
+      navigator.clipboard.writeText(cmd).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = 'copied!';
+        setTimeout(() => { btn.textContent = 'copy'; }, 2000);
+      });
+    }
+  </script>
+
+</body>
+</html>

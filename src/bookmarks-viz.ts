@@ -140,8 +140,8 @@ interface VizData {
   risingVoices: { handle: string; count: number }[];
 }
 
-async function queryVizData(cwd: string): Promise<VizData> {
-  const db = await openDb(twitterBookmarksIndexPath(cwd));
+async function queryVizData(): Promise<VizData> {
+  const db = await openDb(twitterBookmarksIndexPath());
 
   try {
     const total = db.exec('SELECT COUNT(*) FROM bookmarks')[0]?.values[0]?.[0] as number;
@@ -661,8 +661,8 @@ function renderRisingVoices(data: VizData): string[] {
 
 // ── Main render ──────────────────────────────────────────────────────────────
 
-export async function renderViz(cwd = process.cwd()): Promise<string> {
-  const data = await queryVizData(cwd);
+export async function renderViz(): Promise<string> {
+  const data = await queryVizData();
 
   const sections = [
     ...renderHeader(data),

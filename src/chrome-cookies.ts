@@ -38,7 +38,7 @@ function getMacOSChromeKey(): Buffer {
     'Could not read a browser Safe Storage password from the macOS Keychain.\n' +
     'This is needed to decrypt Chrome-family cookies.\n' +
     'Fix: open the browser profile that is logged into X, then retry.\n' +
-    'If you already use the API flow, prefer: ft bookmarks sync --api'
+    'If you already use the API flow, prefer: ft sync --api'
   );
 }
 
@@ -51,7 +51,7 @@ function sanitizeCookieValue(name: string, value: string): string {
     throw new Error(
       `Could not decrypt the ${name} cookie into a valid ASCII header value.\n` +
       'This usually means the wrong browser profile was selected or the cookie format changed.\n' +
-      'Try a different Chrome profile, or use: ft bookmarks sync --api'
+      'Try a different Chrome profile, or use: ft sync --api'
     );
   }
   return cleaned;

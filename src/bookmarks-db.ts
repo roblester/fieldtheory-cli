@@ -3,7 +3,7 @@ import { openDb, saveDb } from './db.js';
 import { readJsonLines } from './fs.js';
 import { twitterBookmarksCachePath, twitterBookmarksIndexPath } from './paths.js';
 import type { BookmarkRecord } from './types.js';
-import { classifyBookmark, classifyCorpus, formatClassificationSummary } from './bookmark-classify.js';
+import { classifyCorpus, formatClassificationSummary } from './bookmark-classify.js';
 import type { ClassificationSummary } from './bookmark-classify.js';
 
 const SCHEMA_VERSION = 3;
@@ -270,9 +270,9 @@ function insertRecord(db: Database, r: BookmarkRecord): void {
   );
 }
 
-export async function buildIndex(cwd = process.cwd()): Promise<{ dbPath: string; recordCount: number }> {
-  const cachePath = twitterBookmarksCachePath(cwd);
-  const dbPath = twitterBookmarksIndexPath(cwd);
+export async function buildIndex(): Promise<{ dbPath: string; recordCount: number }> {
+  const cachePath = twitterBookmarksCachePath();
+  const dbPath = twitterBookmarksIndexPath();
   const records = await readJsonLines<BookmarkRecord>(cachePath);
 
   const db = await openDb(dbPath);
@@ -299,8 +299,8 @@ export async function buildIndex(cwd = process.cwd()): Promise<{ dbPath: string;
   }
 }
 
-export async function searchBookmarks(options: SearchOptions, cwd = process.cwd()): Promise<SearchResult[]> {
-  const dbPath = twitterBookmarksIndexPath(cwd);
+export async function searchBookmarks(options: SearchOptions): Promise<SearchResult[]> {
+  const dbPath = twitterBookmarksIndexPath();
   const db = await openDb(dbPath);
   ensureMigrations(db);
   const limit = options.limit ?? 20;
@@ -376,9 +376,8 @@ export async function searchBookmarks(options: SearchOptions, cwd = process.cwd(
 
 export async function listBookmarks(
   filters: BookmarkTimelineFilters = {},
-  cwd = process.cwd()
 ): Promise<BookmarkTimelineItem[]> {
-  const dbPath = twitterBookmarksIndexPath(cwd);
+  const dbPath = twitterBookmarksIndexPath();
   const db = await openDb(dbPath);
   ensureMigrations(db);
   const limit = filters.limit ?? 30;
@@ -429,9 +428,8 @@ export async function listBookmarks(
 
 export async function countBookmarks(
   filters: BookmarkTimelineFilters = {},
-  cwd = process.cwd()
 ): Promise<number> {
-  const dbPath = twitterBookmarksIndexPath(cwd);
+  const dbPath = twitterBookmarksIndexPath();
   const db = await openDb(dbPath);
   ensureMigrations(db);
 
@@ -449,8 +447,8 @@ export async function countBookmarks(
   }
 }
 
-export async function exportBookmarksForSyncSeed(cwd = process.cwd()): Promise<BookmarkRecord[]> {
-  const dbPath = twitterBookmarksIndexPath(cwd);
+export async function exportBookmarksForSyncSeed(): Promise<BookmarkRecord[]> {
+  const dbPath = twitterBookmarksIndexPath();
   const db = await openDb(dbPath);
   ensureMigrations(db);
 
@@ -516,8 +514,8 @@ export async function exportBookmarksForSyncSeed(cwd = process.cwd()): Promise<B
   }
 }
 
-export async function getBookmarkById(id: string, cwd = process.cwd()): Promise<BookmarkTimelineItem | null> {
-  const dbPath = twitterBookmarksIndexPath(cwd);
+export async function getBookmarkById(id: string): Promise<BookmarkTimelineItem | null> {
+  const dbPath = twitterBookmarksIndexPath();
   const db = await openDb(dbPath);
   ensureMigrations(db);
 
@@ -559,14 +557,14 @@ export async function getBookmarkById(id: string, cwd = process.cwd()): Promise<
   }
 }
 
-export async function getStats(cwd = process.cwd()): Promise<{
+export async function getStats(): Promise<{
   totalBookmarks: number;
   uniqueAuthors: number;
   dateRange: { earliest: string | null; latest: string | null };
   topAuthors: { handle: string; count: number }[];
   languageBreakdown: { language: string; count: number }[];
 }> {
-  const dbPath = twitterBookmarksIndexPath(cwd);
+  const dbPath = twitterBookmarksIndexPath();
   const db = await openDb(dbPath);
 
   try {
@@ -608,18 +606,18 @@ export async function getStats(cwd = process.cwd()): Promise<{
 
 // ── Classification ───────────────────────────────────────────────────────
 
-export async function classifyAndRebuild(cwd = process.cwd()): Promise<{
+export async function classifyAndRebuild(): Promise<{
   dbPath: string;
   recordCount: number;
   summary: ClassificationSummary;
 }> {
-  const cachePath = twitterBookmarksCachePath(cwd);
-  const dbPath = twitterBookmarksIndexPath(cwd);
+  const cachePath = twitterBookmarksCachePath();
+  const dbPath = twitterBookmarksIndexPath();
   const records = await readJsonLines<BookmarkRecord>(cachePath);
   const { results, summary } = classifyCorpus(records);
 
   // Rebuild index then apply regex classifications
-  const buildResult = await buildIndex(cwd);
+  const buildResult = await buildIndex();
   const db = await openDb(dbPath);
   ensureMigrations(db);
   try {
@@ -650,9 +648,8 @@ export interface CategorySample {
 export async function sampleByCategory(
   category: string,
   limit: number,
-  cwd = process.cwd()
 ): Promise<CategorySample[]> {
-  const dbPath = twitterBookmarksIndexPath(cwd);
+  const dbPath = twitterBookmarksIndexPath();
   const db = await openDb(dbPath);
   try {
     const rows = db.exec(
@@ -678,8 +675,8 @@ export async function sampleByCategory(
   }
 }
 
-export async function getCategoryCounts(cwd = process.cwd()): Promise<Record<string, number>> {
-  const dbPath = twitterBookmarksIndexPath(cwd);
+export async function getCategoryCounts(): Promise<Record<string, number>> {
+  const dbPath = twitterBookmarksIndexPath();
   const db = await openDb(dbPath);
   ensureMigrations(db);
   try {
@@ -698,8 +695,8 @@ export async function getCategoryCounts(cwd = process.cwd()): Promise<Record<str
   }
 }
 
-export async function getDomainCounts(cwd = process.cwd()): Promise<Record<string, number>> {
-  const dbPath = twitterBookmarksIndexPath(cwd);
+export async function getDomainCounts(): Promise<Record<string, number>> {
+  const dbPath = twitterBookmarksIndexPath();
   const db = await openDb(dbPath);
   ensureMigrations(db);
   try {
@@ -721,9 +718,8 @@ export async function getDomainCounts(cwd = process.cwd()): Promise<Record<strin
 export async function sampleByDomain(
   domain: string,
   limit: number,
-  cwd = process.cwd()
 ): Promise<CategorySample[]> {
-  const dbPath = twitterBookmarksIndexPath(cwd);
+  const dbPath = twitterBookmarksIndexPath();
   const db = await openDb(dbPath);
   ensureMigrations(db);
   try {

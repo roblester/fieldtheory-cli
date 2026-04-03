@@ -1,5 +1,5 @@
 import { ensureDir, readJsonLines, writeJsonLines, readJson, writeJson, pathExists } from './fs.js';
-import { sourcesDir, twitterBookmarksCachePath, twitterBackfillStatePath } from './paths.js';
+import { ensureDataDir, twitterBookmarksCachePath, twitterBackfillStatePath } from './paths.js';
 import { loadChromeSessionConfig } from './config.js';
 import { extractChromeXCookies } from './chrome-cookies.js';
 import type { BookmarkBackfillState, BookmarkRecord } from './types.js';
@@ -117,11 +117,11 @@ function compareBookmarkChronology(a: BookmarkRecord, b: BookmarkRecord): number
   return aStamp.localeCompare(bStamp);
 }
 
-async function loadExistingBookmarks(cwd: string): Promise<BookmarkRecord[]> {
-  const cachePath = twitterBookmarksCachePath(cwd);
+async function loadExistingBookmarks(): Promise<BookmarkRecord[]> {
+  const cachePath = twitterBookmarksCachePath();
   const existing = await readJsonLines<BookmarkRecord>(cachePath);
   if (existing.length > 0) return existing;
-  return exportBookmarksForSyncSeed(cwd);
+  return exportBookmarksForSyncSeed();
 }
 
 function buildUrl(cursor?: string): string {
@@ -370,7 +370,6 @@ export function formatSyncResult(result: SyncResult): string {
 }
 
 export async function syncBookmarksGraphQL(
-  cwd = process.cwd(),
   options: SyncOptions = {}
 ): Promise<SyncResult> {
   const incremental = options.incremental ?? true;
@@ -387,7 +386,7 @@ export async function syncBookmarksGraphQL(
     csrfToken = options.csrfToken;
     cookieHeader = options.cookieHeader;
   } else {
-    const chromeConfig = loadChromeSessionConfig(cwd);
+    const chromeConfig = loadChromeSessionConfig();
     const chromeDir = options.chromeUserDataDir ?? chromeConfig.chromeUserDataDir;
     const chromeProfile = options.chromeProfileDirectory ?? chromeConfig.chromeProfileDirectory;
     const cookies = extractChromeXCookies(chromeDir, chromeProfile);
@@ -395,10 +394,10 @@ export async function syncBookmarksGraphQL(
     cookieHeader = cookies.cookieHeader;
   }
 
-  await ensureDir(sourcesDir(cwd));
-  const cachePath = twitterBookmarksCachePath(cwd);
-  const statePath = twitterBackfillStatePath(cwd);
-  let existing = await loadExistingBookmarks(cwd);
+  ensureDataDir();
+  const cachePath = twitterBookmarksCachePath();
+  const statePath = twitterBackfillStatePath();
+  let existing = await loadExistingBookmarks();
   const newestKnownId = incremental
     ? existing.slice().sort((a, b) => compareBookmarkChronology(b, a))[0]?.id
     : undefined;

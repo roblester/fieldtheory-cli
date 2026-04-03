@@ -126,15 +126,19 @@ export interface LlmClassifyResult {
 }
 
 export async function classifyWithLlm(
-  cwd = process.cwd(),
   options: { onBatch?: (done: number, total: number) => void } = {},
 ): Promise<LlmClassifyResult> {
   const engine = detectEngine();
   if (!engine) {
-    throw new Error('Neither claude nor codex found. Install Claude Code or Codex CLI and log in.');
+    throw new Error(
+      'No supported LLM CLI found.\n' +
+      'Install one of the following and log in:\n' +
+      '  - Claude Code: https://docs.anthropic.com/en/docs/claude-code\n' +
+      '  - Codex CLI:   https://github.com/openai/codex'
+    );
   }
 
-  const dbPath = twitterBookmarksIndexPath(cwd);
+  const dbPath = twitterBookmarksIndexPath();
   const db = await openDb(dbPath);
 
   try {
@@ -241,15 +245,19 @@ ${items}`;
 }
 
 export async function classifyDomainsWithLlm(
-  cwd = process.cwd(),
   options: { all?: boolean; onBatch?: (done: number, total: number) => void } = {},
 ): Promise<LlmClassifyResult> {
   const engine = detectEngine();
   if (!engine) {
-    throw new Error('Neither claude nor codex found. Install Claude Code or Codex CLI and log in.');
+    throw new Error(
+      'No supported LLM CLI found.\n' +
+      'Install one of the following and log in:\n' +
+      '  - Claude Code: https://docs.anthropic.com/en/docs/claude-code\n' +
+      '  - Codex CLI:   https://github.com/openai/codex'
+    );
   }
 
-  const dbPath = twitterBookmarksIndexPath(cwd);
+  const dbPath = twitterBookmarksIndexPath();
   const db = await openDb(dbPath);
 
   // Ensure domain columns exist (migration from schema v2)

@@ -1,17 +1,7 @@
 import { access, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
-import YAML from 'yaml';
 
 export async function ensureDir(dirPath: string): Promise<void> {
   await mkdir(dirPath, { recursive: true });
-}
-
-export async function writeYaml(filePath: string, value: unknown): Promise<void> {
-  await writeFile(filePath, YAML.stringify(value), 'utf8');
-}
-
-export async function readYaml<T>(filePath: string): Promise<T> {
-  const raw = await readFile(filePath, 'utf8');
-  return YAML.parse(raw) as T;
 }
 
 export async function pathExists(filePath: string): Promise<boolean> {

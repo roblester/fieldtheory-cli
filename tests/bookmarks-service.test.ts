@@ -9,15 +9,26 @@ test('formatBookmarkStatus produces human-readable summary', () => {
     lastUpdated: '2026-03-28T17:23:00Z',
     mode: 'Incremental by default (GraphQL + API available)',
     cachePath: '/tmp/x-bookmarks.jsonl',
-    datasetInitialized: true,
   });
 
-  assert.match(text, /Field Theory Bookmarks/);
+  assert.match(text, /^Bookmarks/);
   assert.match(text, /bookmarks: 99/);
   assert.match(text, /last updated: 2026-03-28T17:23:00Z/);
   assert.match(text, /sync mode: Incremental by default \(GraphQL \+ API available\)/);
-  assert.match(text, /dataset: initialized/);
   assert.match(text, /cache: \/tmp\/x-bookmarks\.jsonl/);
+  assert.doesNotMatch(text, /dataset/);
+});
+
+test('formatBookmarkStatus shows never when no lastUpdated', () => {
+  const text = formatBookmarkStatus({
+    connected: false,
+    bookmarkCount: 0,
+    lastUpdated: null,
+    mode: 'Incremental by default (GraphQL)',
+    cachePath: '/tmp/x-bookmarks.jsonl',
+  });
+
+  assert.match(text, /last updated: never/);
 });
 
 test('formatBookmarkSummary produces concise operator-friendly output', () => {
@@ -27,7 +38,6 @@ test('formatBookmarkSummary produces concise operator-friendly output', () => {
     lastUpdated: '2026-03-28T17:23:00Z',
     mode: 'API sync',
     cachePath: '/tmp/x-bookmarks.jsonl',
-    datasetInitialized: true,
   });
 
   assert.match(text, /bookmarks=99/);

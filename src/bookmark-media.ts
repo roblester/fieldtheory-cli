@@ -45,27 +45,26 @@ function sanitizeExtFromContentType(contentType?: string, sourceUrl?: string): s
   return '.bin';
 }
 
-async function loadManifest(cwd = process.cwd()): Promise<MediaFetchManifest | null> {
-  const manifestPath = bookmarkMediaManifestPath(cwd);
+async function loadManifest(): Promise<MediaFetchManifest | null> {
+  const manifestPath = bookmarkMediaManifestPath();
   if (!(await pathExists(manifestPath))) return null;
   return readJson<MediaFetchManifest>(manifestPath);
 }
 
 export async function fetchBookmarkMediaBatch(
-  cwd = process.cwd(),
   options: { limit?: number; maxBytes?: number } = {}
 ): Promise<MediaFetchManifest> {
   const limit = options.limit ?? 100;
   const maxBytes = options.maxBytes ?? 50 * 1024 * 1024;
-  const mediaDir = bookmarkMediaDir(cwd);
-  const manifestPath = bookmarkMediaManifestPath(cwd);
+  const mediaDir = bookmarkMediaDir();
+  const manifestPath = bookmarkMediaManifestPath();
   await ensureDir(mediaDir);
 
-  const bookmarks = await readJsonLines<BookmarkRecord>(twitterBookmarksCachePath(cwd));
+  const bookmarks = await readJsonLines<BookmarkRecord>(twitterBookmarksCachePath());
   const candidates = bookmarks
     .filter((b) => (b.media?.length ?? 0) > 0 || (b.mediaObjects?.length ?? 0) > 0 || b.authorProfileImageUrl)
     .slice(0, limit);
-  const previous = await loadManifest(cwd);
+  const previous = await loadManifest();
   const priorKeys = new Set((previous?.entries ?? []).map((e) => `${e.bookmarkId}::${e.sourceUrl}`));
   const entries: MediaFetchEntry[] = previous?.entries ? [...previous.entries] : [];
 

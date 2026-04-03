@@ -1,5 +1,5 @@
 import { ensureDir, pathExists, readJson, readJsonLines, writeJson, writeJsonLines } from './fs.js';
-import { sourcesDir, twitterBookmarksCachePath, twitterBookmarksMetaPath } from './paths.js';
+import { ensureDataDir, twitterBookmarksCachePath, twitterBookmarksMetaPath } from './paths.js';
 import type { BookmarkCacheMeta, BookmarkRecord } from './types.js';
 import { loadXApiConfig } from './config.js';
 import { loadTwitterOAuthToken } from './xauth.js';
@@ -10,27 +10,6 @@ export interface BookmarkSyncResult {
   added: number;
   cachePath: string;
   metaPath: string;
-}
-
-export interface BookmarkProbeResult {
-  ok: boolean;
-  mode: 'api-bearer-probe' | 'oauth-user-probe';
-  endpoint: string;
-  status?: number;
-  detail: string;
-  sampleCount?: number;
-}
-
-export interface BookmarkPaginationDebugResult {
-  ok: boolean;
-  userId?: string;
-  pages: Array<{
-    page: number;
-    resultCount: number;
-    hasNextToken: boolean;
-    nextTokenPreview?: string;
-  }>;
-  detail: string;
 }
 
 type BookmarkApiTweet = {
@@ -67,53 +46,6 @@ function makeBookmark(record: Partial<BookmarkRecord> & Pick<BookmarkRecord, 'id
     media: record.media ?? [],
     links: record.links ?? [],
     tags: record.tags ?? [],
-  };
-}
-
-export async function probeTwitterBookmarksApi(cwd = process.cwd()): Promise<BookmarkProbeResult> {
-  const config = loadXApiConfig(cwd);
-  if (!config.bearerToken) {
-    return {
-      ok: false,
-      mode: 'api-bearer-probe',
-      endpoint: 'GET /2/users/me/bookmarks',
-      detail: 'Missing X_BEARER_TOKEN; cannot run API bearer probe.',
-    };
-  }
-
-  const endpoint = 'https://api.x.com/2/users/me/bookmarks?max_results=5&tweet.fields=created_at,author_id';
-  const response = await fetch(endpoint, {
-    headers: {
-      Authorization: `Bearer ${config.bearerToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  const text = await response.text();
-  let parsed: any = null;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    parsed = null;
-  }
-
-  if (!response.ok) {
-    return {
-      ok: false,
-      mode: 'api-bearer-probe',
-      endpoint: 'GET /2/users/me/bookmarks',
-      status: response.status,
-      detail: parsed ? JSON.stringify(parsed) : text,
-    };
-  }
-
-  return {
-    ok: true,
-    mode: 'api-bearer-probe',
-    endpoint: 'GET /2/users/me/bookmarks',
-    status: response.status,
-    detail: 'Bookmark endpoint responded successfully.',
-    sampleCount: Array.isArray(parsed?.data) ? parsed.data.length : 0,
   };
 }
 
@@ -218,118 +150,13 @@ async function fetchBookmarksPage(accessToken: string, userId: string, nextToken
   };
 }
 
-export async function debugTwitterBookmarkPagination(cwd = process.cwd(), maxPages = 5): Promise<BookmarkPaginationDebugResult> {
-  const token = await loadTwitterOAuthToken(cwd);
-  if (!token?.access_token) {
-    return {
-      ok: false,
-      pages: [],
-      detail: 'Missing user-context OAuth token. Run: ft bookmarks auth',
-    };
-  }
-
-  const me = await fetchCurrentUserId(token.access_token);
-  if (!me.ok || !me.id) {
-    return {
-      ok: false,
-      pages: [],
-      detail: me.detail,
-    };
-  }
-
-  const pages: BookmarkPaginationDebugResult['pages'] = [];
-  let nextToken: string | undefined;
-
-  for (let pageNum = 1; pageNum <= maxPages; pageNum += 1) {
-    const result = await fetchBookmarksPage(token.access_token, me.id, nextToken);
-    if (!result.ok || !result.page) {
-      return {
-        ok: false,
-        userId: me.id,
-        pages,
-        detail: `Failed on page ${pageNum}: ${result.detail}`,
-      };
-    }
-
-    const tokenValue = result.page.meta?.next_token;
-    pages.push({
-      page: pageNum,
-      resultCount: result.page.meta?.result_count ?? (result.page.data?.length ?? 0),
-      hasNextToken: Boolean(tokenValue),
-      nextTokenPreview: tokenValue ? `${String(tokenValue).slice(0, 12)}...` : undefined,
-    });
-
-    if (!tokenValue) {
-      return {
-        ok: true,
-        userId: me.id,
-        pages,
-        detail: 'No next_token returned; pagination appears to end here.',
-      };
-    }
-
-    nextToken = tokenValue;
-  }
-
-  return {
-    ok: true,
-    userId: me.id,
-    pages,
-    detail: `Collected ${pages.length} pages and still have more pagination token(s).`,
-  };
-}
-
-export async function probeTwitterBookmarksOAuth(cwd = process.cwd()): Promise<BookmarkProbeResult> {
-  const token = await loadTwitterOAuthToken(cwd);
-  if (!token?.access_token) {
-    return {
-      ok: false,
-      mode: 'oauth-user-probe',
-      endpoint: 'GET /2/users/:id/bookmarks',
-      detail: 'Missing user-context OAuth token. Run: ft bookmarks auth',
-    };
-  }
-
-  const me = await fetchCurrentUserId(token.access_token);
-  if (!me.ok || !me.id) {
-    return {
-      ok: false,
-      mode: 'oauth-user-probe',
-      endpoint: 'GET /2/users/me',
-      status: me.status,
-      detail: me.detail,
-    };
-  }
-
-  const result = await fetchBookmarksPage(token.access_token, me.id);
-  if (!result.ok || !result.page) {
-    return {
-      ok: false,
-      mode: 'oauth-user-probe',
-      endpoint: `GET /2/users/${me.id}/bookmarks`,
-      status: result.status,
-      detail: result.detail,
-    };
-  }
-
-  return {
-    ok: true,
-    mode: 'oauth-user-probe',
-    endpoint: `GET /2/users/${me.id}/bookmarks`,
-    status: result.status,
-    detail: 'Bookmark endpoint responded successfully with user-context token.',
-    sampleCount: Array.isArray(result.page.data) ? result.page.data.length : 0,
-  };
-}
-
 export async function syncTwitterBookmarks(
   mode: 'full' | 'incremental',
-  cwd = process.cwd(),
   options: { targetAdds?: number } = {}
 ): Promise<BookmarkSyncResult> {
-  const token = await loadTwitterOAuthToken(cwd);
+  const token = await loadTwitterOAuthToken();
   if (!token?.access_token) {
-    throw new Error('Missing user-context OAuth token. Run: ft bookmarks auth');
+    throw new Error('Missing user-context OAuth token. Run: ft auth');
   }
 
   const me = await fetchCurrentUserId(token.access_token);
@@ -337,9 +164,9 @@ export async function syncTwitterBookmarks(
     throw new Error(`Could not resolve current user id: ${me.detail}`);
   }
 
-  await ensureDir(sourcesDir(cwd));
-  const cachePath = twitterBookmarksCachePath(cwd);
-  const metaPath = twitterBookmarksMetaPath(cwd);
+  ensureDataDir();
+  const cachePath = twitterBookmarksCachePath();
+  const metaPath = twitterBookmarksMetaPath();
   const now = new Date().toISOString();
   const existing = await readJsonLines<BookmarkRecord>(cachePath);
   const existingById = new Map(existing.map((item) => [item.id, item]));
@@ -401,9 +228,9 @@ export async function syncTwitterBookmarks(
   };
 }
 
-export async function getTwitterBookmarksStatus(cwd = process.cwd()): Promise<BookmarkCacheMeta & { cachePath: string; metaPath: string }> {
-  const cachePath = twitterBookmarksCachePath(cwd);
-  const metaPath = twitterBookmarksMetaPath(cwd);
+export async function getTwitterBookmarksStatus(): Promise<BookmarkCacheMeta & { cachePath: string; metaPath: string }> {
+  const cachePath = twitterBookmarksCachePath();
+  const metaPath = twitterBookmarksMetaPath();
   const meta: BookmarkCacheMeta = (await pathExists(metaPath))
     ? await readJson<BookmarkCacheMeta>(metaPath)
     : { provider: 'twitter', schemaVersion: 1, totalBookmarks: 0 };

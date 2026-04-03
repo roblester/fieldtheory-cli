@@ -1,104 +1,53 @@
 import path from 'node:path';
+import os from 'node:os';
 import fs from 'node:fs';
 
-function findCliRoot(start: string): string | null {
-  // Look for the tools/cli directory that contains automation/sources
-  let dir = start;
-  while (true) {
-    // Direct match: we're inside tools/cli
-    if (fs.existsSync(path.join(dir, 'automation', 'sources')) &&
-        fs.existsSync(path.join(dir, 'package.json'))) {
-      return dir;
-    }
-    // Repo root: tools/cli is a subdirectory
-    const cliDir = path.join(dir, 'tools', 'cli');
-    if (fs.existsSync(path.join(cliDir, 'automation', 'sources'))) {
-      return cliDir;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) return null;
-    dir = parent;
+export function dataDir(): string {
+  const override = process.env.FT_DATA_DIR;
+  if (override) return override;
+  return path.join(os.homedir(), '.ft-bookmarks');
+}
+
+function ensureDirSync(dir: string): void {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
 }
 
-export function workspaceRoot(cwd = process.cwd()): string {
-  const found = findCliRoot(cwd);
-  if (found) return found;
-  return cwd;
+export function ensureDataDir(): string {
+  const dir = dataDir();
+  ensureDirSync(dir);
+  return dir;
 }
 
-export function automationDir(cwd = process.cwd()): string {
-  return path.join(workspaceRoot(cwd), 'automation');
+export function twitterBookmarksCachePath(): string {
+  return path.join(dataDir(), 'bookmarks.jsonl');
 }
 
-export function datasetsDir(cwd = process.cwd()): string {
-  return path.join(automationDir(cwd), 'datasets');
+export function twitterBookmarksMetaPath(): string {
+  return path.join(dataDir(), 'bookmarks-meta.json');
 }
 
-export function datasetManifestPath(id: string, cwd = process.cwd()): string {
-  return path.join(datasetsDir(cwd), `${id}.yaml`);
+export function twitterOauthTokenPath(): string {
+  return path.join(dataDir(), 'oauth-token.json');
 }
 
-export function datasetStateDir(id: string, cwd = process.cwd()): string {
-  return path.join(automationDir(cwd), 'dataset-state', id);
+export function twitterBackfillStatePath(): string {
+  return path.join(dataDir(), 'bookmarks-backfill-state.json');
 }
 
-export function datasetArtifactsDir(id: string, cwd = process.cwd()): string {
-  return path.join(datasetStateDir(id, cwd), 'artifacts');
+export function bookmarkMediaDir(): string {
+  return path.join(dataDir(), 'media');
 }
 
-export function datasetLatestPath(id: string, cwd = process.cwd()): string {
-  return path.join(datasetStateDir(id, cwd), 'latest.md');
+export function bookmarkMediaManifestPath(): string {
+  return path.join(dataDir(), 'media-manifest.json');
 }
 
-export function datasetStatePath(id: string, cwd = process.cwd()): string {
-  return path.join(datasetStateDir(id, cwd), 'state.json');
+export function twitterBookmarksIndexPath(): string {
+  return path.join(dataDir(), 'bookmarks.db');
 }
 
-export function sourcesDir(cwd = process.cwd()): string {
-  return path.join(automationDir(cwd), 'sources');
-}
-
-export function twitterBookmarksCachePath(cwd = process.cwd()): string {
-  return path.join(sourcesDir(cwd), 'x-bookmarks.jsonl');
-}
-
-export function twitterBookmarksMetaPath(cwd = process.cwd()): string {
-  return path.join(sourcesDir(cwd), 'x-bookmarks.meta.json');
-}
-
-export function twitterOauthTokenPath(cwd = process.cwd()): string {
-  return path.join(sourcesDir(cwd), 'x-oauth-token.json');
-}
-
-export function twitterBackfillStatePath(cwd = process.cwd()): string {
-  return path.join(sourcesDir(cwd), 'x-bookmarks-backfill-state.json');
-}
-
-export function bookmarkMediaDir(cwd = process.cwd()): string {
-  return path.join(sourcesDir(cwd), 'x-bookmarks-media');
-}
-
-export function bookmarkMediaManifestPath(cwd = process.cwd()): string {
-  return path.join(sourcesDir(cwd), 'x-bookmarks-media-manifest.json');
-}
-
-export function twitterBookmarksIndexPath(cwd = process.cwd()): string {
-  return path.join(sourcesDir(cwd), 'x-bookmarks.db');
-}
-
-export function localStateDir(cwd = process.cwd()): string {
-  return path.join(workspaceRoot(cwd), '.local');
-}
-
-export function timelineStatePath(cwd = process.cwd()): string {
-  return path.join(localStateDir(cwd), 'timeline-state.json');
-}
-
-export function theoryIndexPath(cwd = process.cwd()): string {
-  return path.join(localStateDir(cwd), 'theories.db');
-}
-
-export function theoryMailCacheDir(cwd = process.cwd()): string {
-  return path.join(localStateDir(cwd), 'theory-mail-cache');
+export function isFirstRun(): boolean {
+  return !fs.existsSync(twitterBookmarksCachePath());
 }
