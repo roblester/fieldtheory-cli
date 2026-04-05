@@ -71,11 +71,28 @@ function sanitizeCookieValue(name: string, value: string): string {
   return cleaned;
 }
 
-export function decryptCookieValue(encryptedValue: Buffer, key: Buffer, dbVersion = 0): string {
+export function decryptCookieValue(encryptedValue: Buffer, key: Buffer, dbVersion = 0, platformOverride?: string): string {
   if (encryptedValue.length === 0) return '';
 
-  if (encryptedValue[0] === 0x76 && encryptedValue[1] === 0x31 && encryptedValue[2] === 0x30) {
-    const iv = Buffer.alloc(16, 0x20); // 16 spaces
+  const os = platformOverride ?? platform();
+  const isV10 = encryptedValue[0] === 0x76 && encryptedValue[1] === 0x31 && encryptedValue[2] === 0x30;
+
+  if (isV10 && os === 'win32') {
+    // Windows: AES-256-GCM
+    // Layout: 'v10'(3) + nonce(12) + ciphertext(N) + authTag(16)
+    const nonce = encryptedValue.subarray(3, 15);
+    const authTag = encryptedValue.subarray(encryptedValue.length - 16);
+    const ciphertext = encryptedValue.subarray(15, encryptedValue.length - 16);
+    const decipher = createDecipheriv('aes-256-gcm', key, nonce);
+    decipher.setAuthTag(authTag);
+    let decrypted = decipher.update(ciphertext);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString('utf8');
+  }
+
+  if (isV10) {
+    // macOS: AES-128-CBC
+    const iv = Buffer.alloc(16, 0x20);
     const ciphertext = encryptedValue.subarray(3);
     const decipher = createDecipheriv('aes-128-cbc', key, iv);
     let decrypted = decipher.update(ciphertext);
