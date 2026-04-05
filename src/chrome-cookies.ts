@@ -116,6 +116,54 @@ interface RawCookie {
   value: string;
 }
 
+interface CookieQueryResult {
+  cookies: Array<{ name: string; host_key: string; encrypted_value: Buffer; value: string }>;
+  dbVersion: number;
+}
+
+export async function queryCookiesFromBuffer(
+  dbBuffer: Buffer,
+  domain: string,
+  names: string[]
+): Promise<CookieQueryResult> {
+  const { createRequire } = await import('node:module');
+  const require = createRequire(import.meta.url);
+  const initSqlJs = require('sql.js-fts5') as (opts: any) => Promise<any>;
+  const wasmPath = require.resolve('sql.js-fts5/dist/sql-wasm.wasm');
+  const wasmBinary = (await import('node:fs')).readFileSync(wasmPath);
+  const SQL = await initSqlJs({ wasmBinary });
+  const db = new SQL.Database(dbBuffer);
+
+  let dbVersion = 0;
+  try {
+    const metaRows = db.exec("SELECT value FROM meta WHERE key='version'");
+    if (metaRows.length > 0 && metaRows[0].values.length > 0) {
+      dbVersion = parseInt(String(metaRows[0].values[0][0]), 10) || 0;
+    }
+  } catch { /* meta table may not exist */ }
+
+  const nameParams = names.map(() => '?').join(',');
+  const stmt = db.prepare(
+    `SELECT name, host_key, encrypted_value, value FROM cookies WHERE host_key LIKE ? AND name IN (${nameParams})`
+  );
+  stmt.bind([`%${domain}`, ...names]);
+
+  const cookies: CookieQueryResult['cookies'] = [];
+  while (stmt.step()) {
+    const row = stmt.get();
+    cookies.push({
+      name: row[0] as string,
+      host_key: row[1] as string,
+      encrypted_value: Buffer.from(row[2] as Uint8Array),
+      value: (row[3] as string) ?? '',
+    });
+  }
+  stmt.free();
+  db.close();
+
+  return { cookies, dbVersion };
+}
+
 function queryDbVersion(dbPath: string): number {
   const tryQuery = (p: string) =>
     execFileSync('sqlite3', [p, "SELECT value FROM meta WHERE key='version';"], {

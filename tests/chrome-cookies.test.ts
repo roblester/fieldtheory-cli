@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { pbkdf2Sync, createCipheriv, randomBytes } from 'node:crypto';
-import { decryptCookieValue } from '../src/chrome-cookies.js';
+import { decryptCookieValue, queryCookiesFromBuffer } from '../src/chrome-cookies.js';
 
 function encryptLikeChrome(plaintext: string, password = 'test-password'): { encrypted: Buffer; key: Buffer } {
   const key = pbkdf2Sync(password, 'saltysalt', 1003, 16, 'sha1');
@@ -87,4 +87,38 @@ test('decryptCookieValue: Mac CBC path still works when platform is darwin', () 
   const { encrypted, key } = encryptLikeChrome('mac-cookie-value');
   const result = decryptCookieValue(encrypted, key, 0, 'darwin');
   assert.equal(result, 'mac-cookie-value');
+});
+
+test('queryCookiesFromBuffer: reads cookies from an in-memory SQLite db', async () => {
+  // Build a minimal Chrome Cookies database in memory
+  const { createRequire } = await import('node:module');
+  const req = createRequire(import.meta.url);
+  const initSqlJs = req('sql.js-fts5') as (opts: any) => Promise<any>;
+  const wasmPath = req.resolve('sql.js-fts5/dist/sql-wasm.wasm');
+  const wasmBinary = (await import('node:fs')).readFileSync(wasmPath);
+  const SQL = await initSqlJs({ wasmBinary });
+  const db = new SQL.Database();
+
+  db.run(`CREATE TABLE meta (key TEXT, value TEXT)`);
+  db.run(`INSERT INTO meta VALUES ('version', '24')`);
+  db.run(`CREATE TABLE cookies (
+    name TEXT, host_key TEXT, encrypted_value BLOB, value TEXT
+  )`);
+  db.run(
+    `INSERT INTO cookies VALUES (?, ?, ?, ?)`,
+    ['ct0', '.x.com', Buffer.from('test-encrypted-value'), '']
+  );
+  db.run(
+    `INSERT INTO cookies VALUES (?, ?, ?, ?)`,
+    ['auth_token', '.x.com', Buffer.from('test-auth-value'), '']
+  );
+
+  const exported = Buffer.from(db.export());
+  db.close();
+
+  const result = await queryCookiesFromBuffer(exported, '.x.com', ['ct0', 'auth_token']);
+  assert.equal(result.cookies.length, 2);
+  assert.equal(result.dbVersion, 24);
+  assert.equal(result.cookies[0].name, 'ct0');
+  assert.ok(result.cookies[0].encrypted_value instanceof Buffer);
 });
