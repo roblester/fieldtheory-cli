@@ -146,6 +146,12 @@ export function decryptCookieValue(encryptedValue: Buffer, key: Buffer, dbVersio
     decipher.setAuthTag(authTag);
     let decrypted = decipher.update(ciphertext);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
+
+    // Chrome DB version >= 24 (Chrome ~130+) prepends SHA256(host_key) to plaintext
+    if (dbVersion >= 24 && decrypted.length > 32) {
+      decrypted = decrypted.subarray(32);
+    }
+
     return decrypted.toString('utf8');
   }
 
@@ -198,22 +204,25 @@ export async function queryCookiesFromBuffer(
   const stmt = db.prepare(
     `SELECT name, host_key, encrypted_value, value FROM cookies WHERE host_key LIKE ? AND name IN (${nameParams})`
   );
-  stmt.bind([`%${domain}`, ...names]);
+  try {
+    stmt.bind([`%${domain}`, ...names]);
 
-  const cookies: CookieQueryResult['cookies'] = [];
-  while (stmt.step()) {
-    const row = stmt.get();
-    cookies.push({
-      name: row[0] as string,
-      host_key: row[1] as string,
-      encrypted_value: Buffer.from(row[2] as Uint8Array),
-      value: (row[3] as string) ?? '',
-    });
+    const cookies: CookieQueryResult['cookies'] = [];
+    while (stmt.step()) {
+      const row = stmt.get();
+      cookies.push({
+        name: row[0] as string,
+        host_key: row[1] as string,
+        encrypted_value: Buffer.from(row[2] as Uint8Array),
+        value: (row[3] as string) ?? '',
+      });
+    }
+
+    return { cookies, dbVersion };
+  } finally {
+    stmt.free();
+    db.close();
   }
-  stmt.free();
-  db.close();
-
-  return { cookies, dbVersion };
 }
 
 export async function extractChromeXCookies(
