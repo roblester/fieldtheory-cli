@@ -395,7 +395,7 @@ export async function syncBookmarksGraphQL(
     const chromeConfig = loadChromeSessionConfig();
     const chromeDir = options.chromeUserDataDir ?? chromeConfig.chromeUserDataDir;
     const chromeProfile = options.chromeProfileDirectory ?? chromeConfig.chromeProfileDirectory;
-    const cookies = extractChromeXCookies(chromeDir, chromeProfile);
+    const cookies = await extractChromeXCookies(chromeDir, chromeProfile);
     csrfToken = cookies.csrfToken;
     cookieHeader = cookies.cookieHeader;
   }

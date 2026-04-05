@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, unlinkSync, copyFileSync } from 'node:fs';
+import { existsSync, unlinkSync, copyFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir, platform } from 'node:os';
 import { pbkdf2Sync, createDecipheriv, randomUUID } from 'node:crypto';
@@ -41,6 +41,65 @@ function getMacOSChromeKey(): Buffer {
     'Fix: open the browser profile that is logged into X, then retry.\n' +
     'If you already use the API flow, prefer: ft sync --api'
   );
+}
+
+function getWindowsChromeKey(chromeUserDataDir: string): Buffer {
+  const localStatePath = join(chromeUserDataDir, 'Local State');
+  if (!existsSync(localStatePath)) {
+    throw new Error(
+      `Chrome Local State file not found at: ${localStatePath}\n` +
+      'Fix: Make sure Google Chrome is installed and has been opened at least once.'
+    );
+  }
+
+  const localState = JSON.parse(readFileSync(localStatePath, 'utf8'));
+  const encryptedKeyB64 = localState?.os_crypt?.encrypted_key;
+  if (!encryptedKeyB64) {
+    throw new Error(
+      'Could not find os_crypt.encrypted_key in Chrome Local State.\n' +
+      'Fix: Make sure you are using a recent version of Google Chrome.'
+    );
+  }
+
+  const encryptedKey = Buffer.from(encryptedKeyB64, 'base64');
+  // Strip the 'DPAPI' prefix (5 bytes: 0x44 0x50 0x41 0x50 0x49)
+  if (encryptedKey.subarray(0, 5).toString('ascii') !== 'DPAPI') {
+    throw new Error('Chrome encrypted key does not have expected DPAPI prefix.');
+  }
+  const dpapiBlobB64 = encryptedKey.subarray(5).toString('base64');
+
+  // Use PowerShell to call CryptUnprotectData via .NET's ProtectedData class
+  const psScript = `
+Add-Type -AssemblyName System.Security
+$bytes = [Convert]::FromBase64String('${dpapiBlobB64}')
+$decrypted = [Security.Cryptography.ProtectedData]::Unprotect($bytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
+[Convert]::ToBase64String($decrypted)
+`.trim();
+
+  let output: string;
+  try {
+    output = execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', psScript], {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 10000,
+    }).trim();
+  } catch (err: any) {
+    throw new Error(
+      'Failed to decrypt Chrome master key via DPAPI.\n' +
+      `PowerShell error: ${err.message}\n` +
+      'Fix: Make sure you are running this as the same Windows user who owns the Chrome profile.'
+    );
+  }
+
+  const key = Buffer.from(output, 'base64');
+  if (key.length !== 32) {
+    throw new Error(
+      `Decrypted Chrome key is ${key.length} bytes, expected 32.\n` +
+      'This may indicate a corrupted Local State file or an unsupported Chrome version.'
+    );
+  }
+
+  return key;
 }
 
 function sanitizeCookieValue(name: string, value: string): string {
@@ -109,13 +168,6 @@ export function decryptCookieValue(encryptedValue: Buffer, key: Buffer, dbVersio
   return encryptedValue.toString('utf8');
 }
 
-interface RawCookie {
-  name: string;
-  host_key: string;
-  encrypted_value_hex: string;
-  value: string;
-}
-
 interface CookieQueryResult {
   cookies: Array<{ name: string; host_key: string; encrypted_value: Buffer; value: string }>;
   dbVersion: number;
@@ -164,29 +216,26 @@ export async function queryCookiesFromBuffer(
   return { cookies, dbVersion };
 }
 
-function queryDbVersion(dbPath: string): number {
-  const tryQuery = (p: string) =>
-    execFileSync('sqlite3', [p, "SELECT value FROM meta WHERE key='version';"], {
-      encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000,
-    }).trim();
+export async function extractChromeXCookies(
+  chromeUserDataDir: string,
+  profileDirectory = 'Default'
+): Promise<ChromeCookieResult> {
+  const os = platform();
 
-  try {
-    return parseInt(tryQuery(dbPath), 10) || 0;
-  } catch {
-    // DB may be locked by Chrome — try a copy
-    const tmpDb = join(tmpdir(), `ft-meta-${randomUUID()}.db`);
-    try {
-      copyFileSync(dbPath, tmpDb);
-      return parseInt(tryQuery(tmpDb), 10) || 0;
-    } catch {
-      return 0;
-    } finally {
-      try { unlinkSync(tmpDb); } catch {}
-    }
+  let key: Buffer;
+  if (os === 'darwin') {
+    key = getMacOSChromeKey();
+  } else if (os === 'win32') {
+    key = getWindowsChromeKey(chromeUserDataDir);
+  } else {
+    throw new Error(
+      `Direct cookie extraction is currently supported on macOS and Windows.\n` +
+      `Detected platform: ${os}\n` +
+      'Fix: Pass --csrf-token and --cookie-header directly, or contribute Linux support.'
+    );
   }
-}
 
-function queryCookies(dbPath: string, domain: string, names: string[]): { cookies: RawCookie[]; dbVersion: number } {
+  const dbPath = join(chromeUserDataDir, profileDirectory, 'Cookies');
   if (!existsSync(dbPath)) {
     throw new Error(
       `Chrome Cookies database not found at: ${dbPath}\n` +
@@ -195,25 +244,16 @@ function queryCookies(dbPath: string, domain: string, names: string[]): { cookie
     );
   }
 
-  const safeDomain = domain.replace(/'/g, "''");
-  const nameList = names.map(n => `'${n.replace(/'/g, "''")}'`).join(',');
-  const sql = `SELECT name, host_key, hex(encrypted_value) as encrypted_value_hex, value FROM cookies WHERE host_key LIKE '%${safeDomain}' AND name IN (${nameList});`;
-
-  const tryQuery = (path: string): string =>
-    execFileSync('sqlite3', ['-json', path, sql], {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 10000,
-    }).trim();
-
-  let output: string;
+  // Read the Cookies DB into memory via sql.js (cross-platform, avoids sqlite3 CLI)
+  let dbBuffer: Buffer;
   try {
-    output = tryQuery(dbPath);
+    dbBuffer = readFileSync(dbPath);
   } catch {
+    // DB may be locked by Chrome — try a copy
     const tmpDb = join(tmpdir(), `ft-cookies-${randomUUID()}.db`);
     try {
       copyFileSync(dbPath, tmpDb);
-      output = tryQuery(tmpDb);
+      dbBuffer = readFileSync(tmpDb);
     } catch (e2: any) {
       throw new Error(
         `Could not read Chrome Cookies database.\n` +
@@ -226,43 +266,15 @@ function queryCookies(dbPath: string, domain: string, names: string[]): { cookie
     }
   }
 
-  const dbVersion = queryDbVersion(dbPath);
-
-  if (!output || output === '[]') return { cookies: [], dbVersion };
-  try {
-    return { cookies: JSON.parse(output), dbVersion };
-  } catch {
-    return { cookies: [], dbVersion };
-  }
-}
-
-export function extractChromeXCookies(
-  chromeUserDataDir: string,
-  profileDirectory = 'Default'
-): ChromeCookieResult {
-  const os = platform();
-  if (os !== 'darwin') {
-    throw new Error(
-      `Direct cookie extraction is currently supported on macOS only.\n` +
-      `Detected platform: ${os}\n` +
-      'Fix: Pass --csrf-token and --cookie-header directly, or contribute Linux/Windows support.'
-    );
-  }
-
-  const dbPath = join(chromeUserDataDir, profileDirectory, 'Cookies');
-  const key = getMacOSChromeKey();
-
-  let result = queryCookies(dbPath, '.x.com', ['ct0', 'auth_token']);
+  let result = await queryCookiesFromBuffer(dbBuffer, '.x.com', ['ct0', 'auth_token']);
   if (result.cookies.length === 0) {
-    result = queryCookies(dbPath, '.twitter.com', ['ct0', 'auth_token']);
+    result = await queryCookiesFromBuffer(dbBuffer, '.twitter.com', ['ct0', 'auth_token']);
   }
 
   const decrypted = new Map<string, string>();
   for (const cookie of result.cookies) {
-    const hexVal = cookie.encrypted_value_hex;
-    if (hexVal && hexVal.length > 0) {
-      const buf = Buffer.from(hexVal, 'hex');
-      decrypted.set(cookie.name, decryptCookieValue(buf, key, result.dbVersion));
+    if (cookie.encrypted_value && cookie.encrypted_value.length > 0) {
+      decrypted.set(cookie.name, decryptCookieValue(cookie.encrypted_value, key, result.dbVersion, os));
     } else if (cookie.value) {
       decrypted.set(cookie.name, cookie.value);
     }
