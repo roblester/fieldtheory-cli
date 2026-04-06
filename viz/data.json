@@ -1,0 +1,693 @@
+{
+  "totals": {
+    "bookmarks": 2644,
+    "authors": 1807,
+    "languages": 18,
+    "firstYear": "2017",
+    "lastYear": "2026"
+  },
+  "yearDistribution": {
+    "2017": 4,
+    "2018": 108,
+    "2019": 268,
+    "2020": 383,
+    "2021": 467,
+    "2022": 375,
+    "2023": 226,
+    "2024": 334,
+    "2025": 221,
+    "2026": 258
+  },
+  "domains": [
+    {
+      "name": "ai",
+      "count": 614
+    },
+    {
+      "name": "design",
+      "count": 457
+    },
+    {
+      "name": "media",
+      "count": 357
+    },
+    {
+      "name": "gaming",
+      "count": 223
+    },
+    {
+      "name": "startups",
+      "count": 157
+    },
+    {
+      "name": "hardware",
+      "count": 100
+    },
+    {
+      "name": "politics",
+      "count": 98
+    },
+    {
+      "name": "web-dev",
+      "count": 93
+    },
+    {
+      "name": "crypto",
+      "count": 47
+    },
+    {
+      "name": "health",
+      "count": 41
+    },
+    {
+      "name": "education",
+      "count": 40
+    },
+    {
+      "name": "finance",
+      "count": 40
+    },
+    {
+      "name": "gamedev",
+      "count": 22
+    },
+    {
+      "name": "devops",
+      "count": 20
+    },
+    {
+      "name": "science",
+      "count": 19
+    }
+  ],
+  "categories": [
+    {
+      "name": "technique",
+      "count": 816
+    },
+    {
+      "name": "opinion",
+      "count": 593
+    },
+    {
+      "name": "tool",
+      "count": 436
+    },
+    {
+      "name": "launch",
+      "count": 253
+    },
+    {
+      "name": "research",
+      "count": 118
+    },
+    {
+      "name": "commerce",
+      "count": 56
+    },
+    {
+      "name": "personal-story",
+      "count": 45
+    },
+    {
+      "name": "design",
+      "count": 43
+    },
+    {
+      "name": "art",
+      "count": 36
+    },
+    {
+      "name": "culture",
+      "count": 34
+    },
+    {
+      "name": "entertainment",
+      "count": 29
+    },
+    {
+      "name": "security",
+      "count": 19
+    },
+    {
+      "name": "ai-news",
+      "count": 17
+    },
+    {
+      "name": "career",
+      "count": 17
+    },
+    {
+      "name": "politics",
+      "count": 11
+    }
+  ],
+  "likeDistribution": {
+    "under10": 191,
+    "to100": 568,
+    "to1k": 911,
+    "to10k": 698,
+    "to100k": 228,
+    "over100k": 48
+  },
+  "authorLoyalty": {
+    "once": 1458,
+    "twice": 206,
+    "threeFour": 88,
+    "fivePlus": 55,
+    "totalAuthors": 1807,
+    "topAuthors": [
+      {
+        "handle": "mattworkman",
+        "count": 26
+      },
+      {
+        "handle": "_akhaliq",
+        "count": 16
+      },
+      {
+        "handle": "_kzr",
+        "count": 16
+      },
+      {
+        "handle": "fofrAI",
+        "count": 16
+      },
+      {
+        "handle": "jappleby",
+        "count": 16
+      },
+      {
+        "handle": "kentbye",
+        "count": 16
+      },
+      {
+        "handle": "tom_hirst",
+        "count": 16
+      },
+      {
+        "handle": "HighlySpammable",
+        "count": 14
+      },
+      {
+        "handle": "karpathy",
+        "count": 13
+      },
+      {
+        "handle": "peterom",
+        "count": 13
+      },
+      {
+        "handle": "skirano",
+        "count": 13
+      },
+      {
+        "handle": "DurkatWork",
+        "count": 11
+      },
+      {
+        "handle": "aescripts",
+        "count": 11
+      },
+      {
+        "handle": "iBrews",
+        "count": 11
+      },
+      {
+        "handle": "theCGchannel",
+        "count": 11
+      }
+    ],
+    "authorBios": {
+      "karpathy": {
+        "name": "Andrej Karpathy",
+        "bio": "I like to train large deep neural nets. Previously Director of AI @ Tesla, founding team @ OpenAI, P",
+        "followers": 2139841,
+        "verified": true
+      },
+      "peterom": {
+        "name": "POM",
+        "bio": "Open Source AI Art hypeman w/ @banodoco | Tools for artistic expression w/ @Reigh_Art | 👫🐕 w/ @han",
+        "followers": 15765,
+        "verified": true
+      },
+      "fofrAI": {
+        "name": "fofr",
+        "bio": "Experimenting with AI at Google DeepMind",
+        "followers": 53761,
+        "verified": true
+      },
+      "skirano": {
+        "name": "Pietro Schirano",
+        "bio": "CEO at @magicpathai 🎨✨ \n\nPreviously, @AnthropicAI, @brexHQ. @Uber, @Facebook. Creator of Claude Eng",
+        "followers": 100724,
+        "verified": true
+      },
+      "jappleby": {
+        "name": "Jack Appleby",
+        "bio": "Marketer, Writer, Speaker, Elder Emo, Rebel Scum.",
+        "followers": 71189,
+        "verified": true
+      },
+      "_akhaliq": {
+        "name": "AK",
+        "bio": "AI research paper tweets, ML @Gradio (acq. by @HuggingFace 🤗) dm for promo ,submit papers here: htt",
+        "followers": 470185,
+        "verified": true
+      },
+      "iBrews": {
+        "name": "Alex Coulombe",
+        "bio": "architect turned #XR-chitect crafting virtual worlds & the spectacles within @agilelens | #UE5 autho",
+        "followers": 16513,
+        "verified": false
+      },
+      "HighlySpammable": {
+        "name": "Chris Murphy",
+        "bio": "Senior Tech Artist on the @UnrealEngine Evangelism team working in Aus/NZ/SE Asia. Have a tendency t",
+        "followers": 20111,
+        "verified": false
+      },
+      "mattworkman": {
+        "name": "Matt Workman",
+        "bio": "Creative Technologist - https://t.co/6khR2HWwQ2",
+        "followers": 23429,
+        "verified": true
+      },
+      "_kzr": {
+        "name": "Keijiro Takahashi",
+        "bio": "A Unity employee.",
+        "followers": 58802,
+        "verified": false
+      },
+      "kentbye": {
+        "name": "Kent Bye (Voices of VR)",
+        "bio": "Voices of VR Podcast, an insatiably curious, XR oral historian, aspiring philosopher.\nPatreon https:",
+        "followers": 38556,
+        "verified": false
+      },
+      "tom_hirst": {
+        "name": "Tom Hirst",
+        "bio": "Builder who sells. Programmer who writes. Autonomy, price theory, Ethereum. Author of Pricing Freela",
+        "followers": 31515,
+        "verified": true
+      },
+      "DurkatWork": {
+        "name": "Durk",
+        "bio": "Award winning Virtual world builder and illustrator. Clients include: TIME, Red bull, Cannes film fe",
+        "followers": 4649,
+        "verified": true
+      },
+      "aescripts": {
+        "name": "aescripts+aeplugins",
+        "bio": "aescripts + aeplugins is a repository and marketplace of high-end scripts and plugins for many leadi",
+        "followers": 45289,
+        "verified": true
+      },
+      "theCGchannel": {
+        "name": "CG Channel",
+        "bio": "Daily news and inspiration for anyone interested in CG, game art or visual effects. Part of the Gnom",
+        "followers": 55199,
+        "verified": false
+      }
+    }
+  },
+  "topBookmarks": [
+    {
+      "author": "steveo",
+      "likes": 819014,
+      "retweets": 75476,
+      "text": "So grateful to be celebrating thirteen years of sobriety today— thanks to everyone who helped me get here! https://t.co/LDncqH7Z2A",
+      "category": "personal-story",
+      "domain": "health",
+      "url": "https://x.com/steveo/status/1369884839445364736"
+    },
+    {
+      "author": "carterhambley",
+      "likes": 445607,
+      "retweets": 49540,
+      "text": "what the hell oreos https://t.co/qmSTmG5EPd",
+      "category": "humor",
+      "domain": "media",
+      "url": "https://x.com/carterhambley/status/1428797863648108545"
+    },
+    {
+      "author": "jogdenUK",
+      "likes": 425922,
+      "retweets": 73106,
+      "text": "Podcasts saying literally nothing for 20 minutes. https://t.co/nmfka1Gjsp",
+      "category": "opinion",
+      "domain": null,
+      "url": "https://x.com/jogdenUK/status/1346442437376552962"
+    },
+    {
+      "author": "KingAmadDiallo",
+      "likes": 402970,
+      "retweets": 17511,
+      "text": "I’m so confused how sheep and goats would even live without humans, their fur never stops growing and they don’t shed, their antlers grow in",
+      "category": "humor",
+      "domain": "media",
+      "url": "https://x.com/KingAmadDiallo/status/1816879939121041494"
+    },
+    {
+      "author": "twitmercan",
+      "likes": 376635,
+      "retweets": 28436,
+      "text": "Trump’s neck p*ssy is crazy tonight 🥴 https://t.co/2XMyZr3Y8B",
+      "category": "opinion",
+      "domain": "politics",
+      "url": "https://x.com/twitmercan/status/1833673461174030469"
+    },
+    {
+      "author": "Fly_Malcolm_X",
+      "likes": 358744,
+      "retweets": 205251,
+      "text": "Holy shit https://t.co/iCkqfyAoqG",
+      "category": "entertainment",
+      "domain": "media",
+      "url": "https://x.com/Fly_Malcolm_X/status/1174311990275321861"
+    },
+    {
+      "author": "KylePlantEmoji",
+      "likes": 322434,
+      "retweets": 54648,
+      "text": "Every group chat births a second smaller group chat without the annoying people, and if you think yours doesn't, I have some bad news",
+      "category": "opinion",
+      "domain": "media",
+      "url": "https://x.com/KylePlantEmoji/status/1109581596456181760"
+    },
+    {
+      "author": "TansuYegen",
+      "likes": 293208,
+      "retweets": 46037,
+      "text": "Multiplication from scratch😊 https://t.co/Ivb0mp0Wcg",
+      "category": "technique",
+      "domain": null,
+      "url": "https://x.com/TansuYegen/status/1581362833220308992"
+    },
+    {
+      "author": "gagasyuyi",
+      "likes": 282417,
+      "retweets": 16248,
+      "text": "a thread of the most iconic photos taken in pop culture: https://t.co/4cHeWazIY6",
+      "category": "opinion",
+      "domain": "media",
+      "url": "https://x.com/gagasyuyi/status/1797402581049709045"
+    },
+    {
+      "author": "naval",
+      "likes": 272530,
+      "retweets": 79082,
+      "text": "How to Get Rich (without getting lucky):",
+      "category": "technique",
+      "domain": "finance",
+      "url": "https://x.com/naval/status/1002103360646823936"
+    },
+    {
+      "author": "doxie_gay",
+      "likes": 264521,
+      "retweets": 7302,
+      "text": "btw I worked at G*tty Images and they have an internal list of celebrity relationships with photographers (so when an event occurs they basi",
+      "category": "opinion",
+      "domain": "media",
+      "url": "https://x.com/doxie_gay/status/1893443890226561363"
+    },
+    {
+      "author": "MarkRuffalo",
+      "likes": 250142,
+      "retweets": 32994,
+      "text": "Don’t skip leg day 😅 #AvengersEndgame https://t.co/2ixf1YkX7E",
+      "category": "opinion",
+      "domain": "media",
+      "url": "https://x.com/MarkRuffalo/status/1164525636179955712"
+    }
+  ],
+  "engagementByDomain": [
+    {
+      "name": "health",
+      "count": 41,
+      "avgLikes": 28030
+    },
+    {
+      "name": "science",
+      "count": 19,
+      "avgLikes": 21872
+    },
+    {
+      "name": "politics",
+      "count": 98,
+      "avgLikes": 20736
+    },
+    {
+      "name": "media",
+      "count": 357,
+      "avgLikes": 18292
+    },
+    {
+      "name": "finance",
+      "count": 40,
+      "avgLikes": 13471
+    },
+    {
+      "name": "defense",
+      "count": 10,
+      "avgLikes": 7499
+    },
+    {
+      "name": "crypto",
+      "count": 47,
+      "avgLikes": 6861
+    },
+    {
+      "name": "education",
+      "count": 40,
+      "avgLikes": 6695
+    },
+    {
+      "name": "web-dev",
+      "count": 93,
+      "avgLikes": 4240
+    },
+    {
+      "name": "design",
+      "count": 457,
+      "avgLikes": 4068
+    },
+    {
+      "name": "gaming",
+      "count": 223,
+      "avgLikes": 3219
+    },
+    {
+      "name": "hardware",
+      "count": 100,
+      "avgLikes": 3143
+    }
+  ],
+  "engagementByCategory": [
+    {
+      "name": "personal-story",
+      "count": 45,
+      "avgLikes": 34718
+    },
+    {
+      "name": "politics",
+      "count": 11,
+      "avgLikes": 30406
+    },
+    {
+      "name": "culture",
+      "count": 34,
+      "avgLikes": 27205
+    },
+    {
+      "name": "entertainment",
+      "count": 29,
+      "avgLikes": 23216
+    },
+    {
+      "name": "health",
+      "count": 10,
+      "avgLikes": 11968
+    },
+    {
+      "name": "art",
+      "count": 36,
+      "avgLikes": 11866
+    },
+    {
+      "name": "opinion",
+      "count": 593,
+      "avgLikes": 11599
+    },
+    {
+      "name": "personal",
+      "count": 10,
+      "avgLikes": 11099
+    },
+    {
+      "name": "design",
+      "count": 43,
+      "avgLikes": 9143
+    },
+    {
+      "name": "security",
+      "count": 19,
+      "avgLikes": 8799
+    },
+    {
+      "name": "commerce",
+      "count": 56,
+      "avgLikes": 7783
+    },
+    {
+      "name": "research",
+      "count": 118,
+      "avgLikes": 6599
+    }
+  ],
+  "linkDomains": [
+    {
+      "domain": "github.com",
+      "count": 106
+    },
+    {
+      "domain": "youtu.be",
+      "count": 85
+    },
+    {
+      "domain": "x.com",
+      "count": 84
+    },
+    {
+      "domain": "youtube.com",
+      "count": 54
+    },
+    {
+      "domain": "bit.ly",
+      "count": 30
+    },
+    {
+      "domain": "arxiv.org",
+      "count": 23
+    },
+    {
+      "domain": "huggingface.co",
+      "count": 18
+    },
+    {
+      "domain": "vimeo.com",
+      "count": 14
+    },
+    {
+      "domain": "nytimes.com",
+      "count": 12
+    },
+    {
+      "domain": "nyti.ms",
+      "count": 11
+    },
+    {
+      "domain": "unrealengine.com",
+      "count": 11
+    },
+    {
+      "domain": "aescripts.com",
+      "count": 11
+    }
+  ],
+  "mediaBreakdown": {
+    "mediaPct": 57,
+    "linkPct": 19,
+    "textPct": 24
+  },
+  "heatmap": {
+    "rows": [
+      "technique",
+      "opinion",
+      "tool",
+      "launch",
+      "research",
+      "commerce"
+    ],
+    "cols": [
+      "ai",
+      "design",
+      "media",
+      "gaming",
+      "startups",
+      "hardware"
+    ],
+    "cells": {
+      "technique|ai": 206,
+      "technique|design": 191,
+      "tool|ai": 178,
+      "opinion|media": 131,
+      "technique|gaming": 111,
+      "launch|ai": 80,
+      "tool|design": 80,
+      "opinion|ai": 77,
+      "opinion|startups": 68,
+      "technique|media": 57,
+      "opinion|design": 52,
+      "research|ai": 45,
+      "technique|startups": 39,
+      "launch|gaming": 36,
+      "launch|design": 35,
+      "tool|gaming": 31,
+      "technique|hardware": 30,
+      "launch|media": 24,
+      "tool|hardware": 23,
+      "tool|media": 20,
+      "opinion|gaming": 19,
+      "launch|hardware": 17,
+      "launch|startups": 14,
+      "research|media": 11,
+      "commerce|design": 9,
+      "commerce|startups": 9,
+      "opinion|hardware": 9,
+      "commerce|media": 7,
+      "research|hardware": 7,
+      "commerce|hardware": 6,
+      "research|design": 6,
+      "research|startups": 6,
+      "tool|startups": 6,
+      "commerce|gaming": 4,
+      "research|gaming": 3,
+      "commerce|ai": 2
+    }
+  },
+  "languages": [
+    {
+      "name": "en",
+      "count": 2496
+    },
+    {
+      "name": "zxx",
+      "count": 85
+    },
+    {
+      "name": "qme",
+      "count": 14
+    },
+    {
+      "name": "ja",
+      "count": 11
+    },
+    {
+      "name": "und",
+      "count": 9
+    },
+    {
+      "name": "es",
+      "count": 7
+    },
+    {
+      "name": "fr",
+      "count": 6
+    },
+    {
+      "name": "art",
+      "count": 3
+    }
+  ]
+}

@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BUREAU OF DIGITAL BEHAVIOR // FORM 27-B STROKE 6</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap');
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #070a07;
+  --bg-panel: #0b100b;
+  --amber: #ffc040;
+  --amber-dim: #a07828;
+  --amber-glow: #ffc04060;
+  --amber-hot: #ffe070;
+  --green: #40ff60;
+  --green-dim: #20a030;
+  --green-faint: #40ff6018;
+  --cyan: #00ffcc;
+  --red: #ff4040;
+  --text: #c0d4a8;
+  --text-dim: #708060;
+  --text-bright: #e0f0d0;
+  --border: #243424;
+  --scanline: rgba(0, 0, 0, 0.1);
+  --font-mono: 'JetBrains Mono', 'Space Mono', 'Courier New', monospace;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* CRT scanline overlay — subtle, not dimming */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.06) 0px,
+    rgba(0, 0, 0, 0.06) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* CRT vignette — gentle, just the far corners */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0, 0, 0, 0.25) 85%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* CRT flicker + slight color shift */
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.96; filter: hue-rotate(2deg); }
+  94% { opacity: 1; filter: none; }
+  97% { opacity: 0.98; }
+  98% { opacity: 1; }
+}
+body { animation: flicker 6s infinite; }
+
+/* Noise/grain texture via SVG data URI */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 56px 32px 120px;
+  position: relative;
+}
+
+@media (min-width: 1200px) {
+  .container { max-width: 1300px; padding: 72px 56px 160px; }
+}
+
+@media (min-width: 1600px) {
+  .container { max-width: 1500px; padding: 80px 80px 180px; }
+}
+
+@media (min-width: 1900px) {
+  .container { max-width: 1680px; padding: 96px 96px 200px; }
+}
+
+/* Subtle phosphor grain over everything */
+html::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  pointer-events: none;
+  z-index: 9997;
+}
+
+/* ── HEADER ─────────────────────────────────── */
+
+.header {
+  padding: 80px 0 64px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 80px;
+  position: relative;
+  min-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+@media (min-width: 1200px) {
+  .header { padding: 120px 0 80px; margin-bottom: 120px; min-height: 60vh; }
+}
+
+@media (min-width: 1600px) {
+  .header { padding: 140px 0 96px; margin-bottom: 140px; }
+}
+
+.classification {
+  font-size: 9px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 32px;
+  padding: 6px 12px;
+  border: 1px solid var(--red);
+  display: inline-block;
+  animation: pulse-border 3s ease infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: var(--red); box-shadow: 0 0 8px rgba(255, 51, 51, 0.15); }
+  50% { border-color: #ff6666; box-shadow: 0 0 20px rgba(255, 51, 51, 0.3); }
+}
+
+/* Boot sequence — header elements stagger in */
+.header .classification,
+.header .title,
+.header .subtitle,
+.header .stats-row,
+.header .diagnosis {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.header.booted .classification {
+  opacity: 1; transform: translateY(0);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  transition-delay: 200ms;
+}
+
+.header.booted .title {
+  opacity: 1; transform: translateY(0);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  transition-delay: 600ms;
+}
+
+.header.booted .subtitle {
+  opacity: 1; transform: translateY(0);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  transition-delay: 1100ms;
+}
+
+.header.booted .stats-row {
+  opacity: 1; transform: translateY(0);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+  transition-delay: 1500ms;
+}
+
+.header.booted .diagnosis {
+  opacity: 1; transform: translateY(0);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+  transition-delay: 2200ms;
+}
+
+/* Stats counter glow pulse when they finish counting */
+@keyframes count-done {
+  0% { text-shadow: 0 0 40px var(--green-faint), 0 0 80px rgba(48, 255, 80, 0.1); }
+  50% { text-shadow: 0 0 60px rgba(48, 255, 80, 0.35), 0 0 100px rgba(48, 255, 80, 0.15); }
+  100% { text-shadow: 0 0 40px var(--green-faint), 0 0 80px rgba(48, 255, 80, 0.1); }
+}
+
+.stat-value.counted {
+  animation: count-done 0.8s ease;
+}
+
+.classification::before {
+  content: '\u25C6 ';
+}
+.classification::after {
+  content: ' \u25C6';
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-size: clamp(40px, 8vw, 110px);
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 0.95;
+  margin-bottom: 20px;
+  text-shadow:
+    -1px 0 0 rgba(255, 60, 60, 0.35),
+    1px 0 0 rgba(60, 255, 120, 0.25),
+    0 0 40px var(--amber-glow),
+    0 0 80px rgba(255, 192, 64, 0.15);
+  letter-spacing: -3px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-dim);
+  font-weight: 300;
+  margin-bottom: 8px;
+}
+
+.stats-row {
+  display: flex;
+  gap: 48px;
+  margin-top: 48px;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 1200px) {
+  .stats-row { gap: 72px; margin-top: 56px; }
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: clamp(40px, 5vw, 80px);
+  font-weight: 700;
+  color: var(--green);
+  text-shadow:
+    0 0 8px rgba(64, 255, 96, 0.5),
+    0 0 24px rgba(64, 255, 96, 0.2);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.stat-label {
+  font-size: clamp(9px, 0.7vw, 11px);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.diagnosis {
+  margin-top: 32px;
+  padding: 16px 20px;
+  border-left: 3px solid var(--amber-dim);
+  background: linear-gradient(90deg, rgba(255, 184, 48, 0.04) 0%, transparent 60%);
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1.9;
+}
+
+/* ── SECTIONS ───────────────────────────────── */
+
+.finding {
+  margin-bottom: 96px;
+}
+
+/* Children stagger in individually */
+.finding .finding-id,
+.finding .finding-title,
+.finding .finding-desc,
+.finding .bar-chart,
+.finding .histogram,
+.finding .pyramid,
+.finding .ranked-list,
+.finding .badge-row,
+.finding .finding-punchline,
+.finding > div:not(.finding-id):not(.finding-title):not(.finding-desc):not(.finding-punchline):not(.bar-chart):not(.histogram):not(.pyramid):not(.ranked-list):not(.badge-row) {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.finding.visible .finding-id { opacity: 1; transform: translateY(0); transition-delay: 0ms; }
+.finding.visible .finding-title { opacity: 1; transform: translateY(0); transition-delay: 100ms; }
+.finding.visible .finding-desc { opacity: 1; transform: translateY(0); transition-delay: 200ms; }
+.finding.visible .bar-chart,
+.finding.visible .histogram,
+.finding.visible .pyramid,
+.finding.visible .ranked-list,
+.finding.visible .badge-row,
+.finding.visible > div:not(.finding-id):not(.finding-title):not(.finding-desc):not(.finding-punchline):not(.bar-chart):not(.histogram):not(.pyramid):not(.ranked-list):not(.badge-row) {
+  opacity: 1; transform: translateY(0); transition-delay: 350ms;
+}
+.finding.visible .finding-punchline { opacity: 1; transform: translateY(0); transition-delay: 600ms; }
+
+/* Glitch flash on section entry */
+@keyframes glitch-in {
+  0% { clip-path: inset(40% 0 40% 0); filter: hue-rotate(90deg) brightness(3); }
+  10% { clip-path: inset(10% 0 60% 0); filter: hue-rotate(-30deg) brightness(2); }
+  20% { clip-path: inset(70% 0 5% 0); filter: hue-rotate(45deg) brightness(1.5); }
+  30% { clip-path: inset(0); filter: none; }
+  100% { clip-path: inset(0); filter: none; }
+}
+
+.finding.visible .finding-title {
+  animation: glitch-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: 80ms;
+}
+
+.finding-id {
+  font-size: 9px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--amber-dim);
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  display: inline-block;
+}
+
+.finding-title {
+  font-size: clamp(24px, 3.5vw, 48px);
+  font-weight: 700;
+  color: var(--amber);
+  margin-bottom: 12px;
+  text-shadow:
+    -0.7px 0 0 rgba(255, 60, 60, 0.3),
+    0.7px 0 0 rgba(60, 255, 120, 0.2),
+    0 0 20px var(--amber-glow);
+  letter-spacing: -1px;
+}
+
+.finding-desc {
+  color: var(--text);
+  opacity: 0.65;
+  font-size: 12px;
+  margin-bottom: 28px;
+  max-width: 560px;
+  line-height: 1.8;
+}
+
+.finding-punchline {
+  margin-top: 24px;
+  padding: 14px 18px;
+  border-left: 3px solid var(--green);
+  background: linear-gradient(90deg, rgba(64, 255, 96, 0.06) 0%, transparent 60%);
+  color: var(--green);
+  font-size: 12px;
+  line-height: 1.8;
+  position: relative;
+  text-shadow: 0 0 8px rgba(64, 255, 96, 0.12);
+}
+
+.finding-punchline::before {
+  content: 'FIELD NOTE';
+  position: absolute;
+  top: -8px;
+  left: 12px;
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--green-dim);
+  background: var(--bg);
+  padding: 0 6px;
+}
+
+/* ── BAR CHART ──────────────────────────────── */
+
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 130px 1fr 60px;
+  align-items: center;
+  gap: 14px;
+  height: 32px;
+}
+
+@media (min-width: 1200px) {
+  .bar-row { grid-template-columns: 160px 1fr 72px; height: 36px; gap: 18px; }
+}
+
+@media (min-width: 1600px) {
+  .bar-row { grid-template-columns: 180px 1fr 80px; height: 40px; }
+}
+
+.bar-label {
+  font-size: 12px;
+  color: var(--text);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 1200px) {
+  .bar-label { font-size: 13px; }
+}
+
+.bar-track {
+  height: 22px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+@media (min-width: 1200px) {
+  .bar-track { height: 26px; }
+}
+
+@media (min-width: 1600px) {
+  .bar-track { height: 30px; }
+}
+
+.bar-fill {
+  height: 100%;
+  background: var(--green);
+  width: 0;
+  transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 6px rgba(64, 255, 96, 0.3);
+  position: relative;
+}
+
+.bar-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #fff;
+  opacity: 0.8;
+  box-shadow: 0 0 4px var(--green), 0 0 10px var(--green);
+}
+
+.bar-fill.amber { background: var(--amber); box-shadow: 0 0 6px rgba(255, 192, 64, 0.35); }
+.bar-fill.amber::after { box-shadow: 0 0 4px var(--amber), 0 0 10px var(--amber); }
+.bar-fill.cyan { background: var(--cyan); box-shadow: 0 0 6px rgba(0, 255, 204, 0.3); }
+.bar-fill.cyan::after { box-shadow: 0 0 4px var(--cyan), 0 0 10px var(--cyan); }
+.bar-fill.red { background: var(--red); box-shadow: 0 0 6px rgba(255, 64, 64, 0.3); }
+.bar-fill.red::after { box-shadow: 0 0 4px var(--red), 0 0 10px var(--red); }
+
+.bar-value {
+  font-size: 11px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+/* ── HISTOGRAM ──────────────────────────────── */
+
+.histogram {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: clamp(160px, 22vw, 320px);
+  padding-bottom: 32px;
+  position: relative;
+}
+
+@media (min-width: 1600px) {
+  .histogram { gap: 8px; }
+}
+
+.histogram::after {
+  content: '';
+  position: absolute;
+  bottom: 27px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
+}
+
+.hist-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.hist-bar {
+  width: 100%;
+  background: var(--green);
+  min-height: 2px;
+  transition: height 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 0 8px rgba(64, 255, 96, 0.25), 0 -2px 8px rgba(64, 255, 96, 0.15);
+}
+
+.hist-bar.peak {
+  background: var(--amber);
+  box-shadow: 0 0 10px rgba(255, 192, 64, 0.35), 0 -3px 12px rgba(255, 192, 64, 0.2);
+}
+
+.hist-count {
+  font-size: clamp(10px, 1vw, 14px);
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.hist-label {
+  font-size: clamp(9px, 0.8vw, 12px);
+  color: var(--text-dim);
+  position: absolute;
+  bottom: -24px;
+  letter-spacing: 0.5px;
+}
+
+/* ── RANKED LIST ────────────────────────────── */
+
+.ranked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ranked-item {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.ranked-item:hover { border-color: var(--border); }
+
+.rank-num {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--amber-dim);
+  text-align: right;
+}
+
+.ranked-item:nth-child(1) .rank-num { color: var(--amber); }
+.ranked-item:nth-child(2) .rank-num { color: var(--amber); opacity: 0.8; }
+.ranked-item:nth-child(3) .rank-num { color: var(--amber); opacity: 0.6; }
+
+.rank-text {
+  font-size: 12px;
+  color: var(--text-bright);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-author {
+  color: var(--cyan);
+  font-size: 11px;
+  text-shadow: 0 0 8px rgba(0, 255, 204, 0.15);
+}
+
+.rank-meta {
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── HEATMAP ────────────────────────────────── */
+
+.heatmap-grid {
+  display: grid;
+  gap: 2px;
+}
+
+.heatmap-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  transition: background 0.3s, border-color 0.3s;
+  min-height: 52px;
+}
+
+.heatmap-cell:hover {
+  border-color: var(--green-dim);
+  box-shadow: inset 0 0 12px var(--green-faint);
+}
+
+@media (min-width: 900px) {
+  .heatmap-cell { min-height: 72px; font-size: 13px; }
+}
+
+@media (min-width: 1400px) {
+  .heatmap-cell { min-height: 88px; font-size: 15px; font-weight: 500; }
+}
+
+.heatmap-header {
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 4px;
+  border: none !important;
+  aspect-ratio: auto;
+}
+
+.heatmap-row-label {
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  border: none !important;
+  aspect-ratio: auto;
+}
+
+/* ── LOYALTY PYRAMID ────────────────────────── */
+
+.pyramid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 24px;
+}
+
+.pyramid-tier {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  transition: width 0.8s ease;
+}
+
+.pyramid-tier-label { color: var(--text-dim); }
+.pyramid-tier-value { color: var(--green); font-weight: 700; }
+
+/* ── BADGE ROW ──────────────────────────────── */
+
+.badge-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  flex: 1;
+  min-width: 160px;
+  padding: 28px 20px;
+  border: 1px solid var(--border);
+  text-align: center;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.badge:hover {
+  border-color: var(--text-dim);
+  box-shadow: 0 0 24px rgba(0, 232, 187, 0.06);
+}
+
+.badge-number {
+  font-size: clamp(36px, 4vw, 64px);
+  font-weight: 700;
+  color: var(--cyan);
+  text-shadow: 0 0 10px rgba(0, 255, 204, 0.35);
+}
+
+.badge-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ── VERDICT ────────────────────────────────── */
+
+.verdict-card {
+  border: 2px solid var(--amber);
+  padding: 40px;
+  position: relative;
+  background:
+    linear-gradient(135deg, rgba(255, 184, 48, 0.03) 0%, transparent 50%),
+    linear-gradient(225deg, rgba(255, 184, 48, 0.02) 0%, transparent 50%);
+  box-shadow:
+    0 0 40px rgba(255, 184, 48, 0.06),
+    inset 0 0 60px rgba(255, 184, 48, 0.02);
+}
+
+.verdict-card::before {
+  content: '\u25C6 FINAL CLASSIFICATION \u25C6';
+  position: absolute;
+  top: -10px;
+  left: 20px;
+  background: var(--bg);
+  padding: 2px 12px;
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: var(--amber);
+  border: 1px solid var(--amber-dim);
+}
+
+.verdict-archetype {
+  font-size: clamp(26px, 4.5vw, 60px);
+  font-weight: 700;
+  color: var(--amber-hot);
+  margin-bottom: 28px;
+  text-shadow:
+    -1px 0 0 rgba(255, 60, 60, 0.3),
+    1px 0 0 rgba(60, 255, 120, 0.2),
+    0 0 12px rgba(255, 224, 112, 0.5),
+    0 0 40px var(--amber-glow);
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+}
+
+.verdict-symptoms {
+  list-style: none;
+  padding: 0;
+}
+
+.verdict-symptoms li {
+  padding: 4px 0;
+  color: var(--text);
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.verdict-symptoms li::before {
+  content: '> ';
+  color: var(--green-dim);
+}
+
+.verdict-redemption {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  color: var(--green);
+  font-size: 14px;
+  line-height: 2;
+  text-shadow: 0 0 10px rgba(64, 255, 96, 0.2);
+}
+
+/* ── FOOTER ─────────────────────────────────── */
+
+.footer {
+  margin-top: 80px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+/* Verdict card entrance */
+.verdict-card {
+  opacity: 0;
+  transform: scale(0.97);
+  transition: opacity 1s ease, transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: 300ms;
+}
+
+.finding.visible .verdict-card {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.1ms !important;
+    transition-delay: 0ms !important;
+  }
+  .header .classification,
+  .header .title,
+  .header .subtitle,
+  .header .stats-row,
+  .header .diagnosis,
+  .finding .finding-id,
+  .finding .finding-title,
+  .finding .finding-desc,
+  .finding .bar-chart,
+  .finding .histogram,
+  .finding .pyramid,
+  .finding .ranked-list,
+  .finding .badge-row,
+  .finding .finding-punchline,
+  .finding > div,
+  .verdict-card {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+.cursor-blink::after {
+  content: '_';
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ── RESPONSIVE ─────────────────────────────── */
+
+@media (max-width: 600px) {
+  .container { padding: 24px 16px 80px; }
+  .stats-row { gap: 20px; }
+  .stat-value { font-size: 28px; }
+  .bar-row { grid-template-columns: 80px 1fr 40px; height: 24px; }
+  .bar-track { height: 14px; }
+  .badge-row { flex-direction: column; }
+  .heatmap-cell { min-height: 36px; font-size: 9px; }
+  .finding { margin-bottom: 64px; }
+  .verdict-card { padding: 24px; }
+}
+
+/* Large desktop — use the space */
+@media (min-width: 1200px) {
+  .finding { margin-bottom: 140px; }
+  .finding-id { font-size: 10px; letter-spacing: 5px; }
+  .finding-desc { max-width: 720px; font-size: 13px; }
+  .finding-punchline { font-size: 13px; padding: 18px 24px; }
+  .bar-chart { gap: 10px; }
+  .bar-value { font-size: 13px; }
+  .ranked-item { padding: 12px 20px; }
+  .ranked-item:hover { background: var(--bg-panel); }
+  .rank-num { font-size: 22px; }
+  .rank-text { font-size: 14px; }
+  .rank-author { font-size: 12px; }
+  .rank-meta { font-size: 13px; }
+  .verdict-card { padding: 56px; }
+  .verdict-symptoms li { font-size: 14px; padding: 6px 0; line-height: 1.8; }
+  .verdict-redemption { font-size: 16px; line-height: 2.1; }
+  .diagnosis { font-size: 13px; padding: 20px 28px; }
+  .classification { font-size: 10px; letter-spacing: 6px; }
+  .subtitle { font-size: 16px; }
+  .segment-bar { height: 28px; }
+  .segment-legend { font-size: 13px; gap: 28px; }
+  .badge-label { font-size: 11px; letter-spacing: 3px; }
+  .footer { font-size: 11px; }
+}
+
+/* Extra large — ultrawide monitors */
+@media (min-width: 1600px) {
+  .finding { margin-bottom: 160px; }
+  .finding-desc { font-size: 14px; max-width: 800px; }
+  .finding-punchline { font-size: 14px; }
+  .verdict-card { padding: 64px; }
+  .verdict-symptoms li { font-size: 15px; }
+  .verdict-redemption { font-size: 17px; }
+  .diagnosis { font-size: 14px; }
+  .subtitle { font-size: 18px; }
+  .ranked-item { padding: 14px 24px; }
+  .rank-num { font-size: 26px; }
+  .rank-text { font-size: 15px; }
+  .segment-bar { height: 32px; }
+}
+
+/* ── SEGMENT BAR ────────────────────────────── */
+
+.segment-bar {
+  display: flex;
+  height: 20px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.segment { transition: width 1s ease; }
+.segment-legend {
+  display: flex;
+  gap: 20px;
+  font-size: 11px;
+}
+
+.segment-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+}
+
+.segment-swatch {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="classification">BUREAU OF DIGITAL BEHAVIOR // FORM 27-B STROKE 6 // EYES ONLY</div>
+    <h1 class="title">YOU ARE WHAT<br>YOU BOOKMARK</h1>
+    <p class="subtitle">Behavioral profile assembled from <span id="hero-bookmarks">0</span> intercepted saves.</p>
+    <div class="stats-row">
+      <div class="stat">
+        <span class="stat-value" id="hero-authors">0</span>
+        <span class="stat-label">PERSONS OF INTEREST</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="hero-years">0</span>
+        <span class="stat-label">YEARS UNDER SURVEILLANCE</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value" id="hero-langs">0</span>
+        <span class="stat-label">LANGUAGES INTERCEPTED</span>
+      </div>
+    </div>
+    <div class="diagnosis">
+      > RISK PROFILE: Aspirational generalist. Probable intent to learn. No evidence of follow-through.<br>
+      > CADENCE: ~1 save every 14 hours, sustained for 8 years. Consistent with compulsive behavior.<br>
+      > NOTE: Subject was not aware they were being profiled. They did this to themselves.
+    </div>
+  </header>
+
+  <!-- FINDING 01: OBSESSION MAP -->
+  <section class="finding" id="f01">
+    <div class="finding-id">EXHIBIT A / 10</div>
+    <h2 class="finding-title">SUBJECT MATTER ALLOCATION</h2>
+    <div class="finding-desc">Topical distribution of saved materials. Presented without commentary, though the commentary writes itself.</div>
+    <div class="bar-chart" id="domain-bars"></div>
+    <div class="finding-punchline">
+      > FIELD NOTE: Over 60% of intercepts fall within three domains. Subject appears to be a design-curious AI enthusiast who occasionally remembers that the physical world exists. The 4% politics allocation is consistent with an "I should probably stay informed" impulse that activates every 2-4 years, usually in November.
+    </div>
+  </section>
+
+  <!-- FINDING 02: CATEGORY BREAKDOWN -->
+  <section class="finding" id="f02">
+    <div class="finding-id">EXHIBIT B / 10</div>
+    <h2 class="finding-title">STATED INTENTIONS vs. ACTUAL BEHAVIOR</h2>
+    <div class="finding-desc">Content format breakdown. The Bureau notes a significant gap between what the subject saves and what the subject does with it.</div>
+    <div class="bar-chart" id="category-bars"></div>
+    <div class="finding-punchline">
+      > FIELD NOTE: 31% tutorials. 22% opinions. 17% tools. The subject saves how-tos they will never follow, perspectives they already hold, and software they will install, open once, and never return to. This pattern is classified internally as "Collector Syndrome." It is not dangerous, but it is very, very common. We have a whole wing.
+    </div>
+  </section>
+
+  <!-- FINDING 03: GUILTY PLEASURES -->
+  <section class="finding" id="f03">
+    <div class="finding-id">EXHIBIT C / 10</div>
+    <h2 class="finding-title">THE DISCREPANCY REPORT</h2>
+    <div class="finding-desc">Average public engagement per saved item, by domain. This exhibit reveals a statistically significant gap between the subject's professional self-image and their actual saving behavior.</div>
+    <div class="bar-chart" id="eng-domain-bars"></div>
+    <div class="finding-punchline">
+      > FIELD NOTE: The subject's "serious professional interests" (AI, design) average roughly 4,000 likes per saved item. Their health takes and political commentary average 20,000+. The Bureau would like the record to reflect that the subject's most private bookmarking behavior is indistinguishable from their aunt's Facebook feed. We do not say this to be cruel. We say it because it is our job.
+    </div>
+  </section>
+
+  <!-- FINDING 04: VIRALITY ADDICTION -->
+  <section class="finding" id="f04">
+    <div class="finding-id">EXHIBIT D / 10</div>
+    <h2 class="finding-title">TASTE vs. CONFORMITY INDEX</h2>
+    <div class="finding-desc">Distribution of public engagement across saved items. Measures whether the subject discovers content or merely confirms what everyone else already found.</div>
+    <div class="histogram" id="like-histogram"></div>
+    <div style="margin-top: 12px;"></div>
+    <div class="finding-punchline">
+      > FIELD NOTE: Peak saving activity occurs in the 100-1K like bracket. This suggests the subject does possess genuine curatorial instinct and is not simply saving whatever is trending. However, the 276 items exceeding 10,000 likes indicate periodic lapses in which the subject saves things they could have found by opening literally any app. The Bureau classifies this as "I discovered this first" syndrome, complicated by occasional herd behavior. Prognosis: stable.
+    </div>
+  </section>
+
+  <!-- FINDING 05: LOYALTY TEST -->
+  <section class="finding" id="f05">
+    <div class="finding-id">EXHIBIT E / 10</div>
+    <h2 class="finding-title">INTERPERSONAL ATTACHMENT ANALYSIS</h2>
+    <div class="finding-desc">Repeat engagement with individual content sources. Measures the subject's capacity for sustained intellectual commitment.</div>
+    <div class="pyramid" id="loyalty-pyramid"></div>
+    <div class="finding-desc" style="margin-top:16px; margin-bottom:0;">KNOWN ASSOCIATES (5+ intercepts):</div>
+    <div class="bar-chart" id="top-authors" style="margin-top:8px;"></div>
+    <div class="finding-punchline">
+      > FIELD NOTE: Of 1,807 persons of interest, 1,458 (81%) were contacted exactly once. The subject saved their single best thought and moved on without acknowledgment. Only 55 individuals earned repeat engagement. The Bureau has seen this pattern before. It is technically not ghosting if you never followed them in the first place, but the effect is the same.
+    </div>
+  </section>
+
+  <!-- FINDING 06: GREATEST HITS -->
+  <section class="finding" id="f06">
+    <div class="finding-id">EXHIBIT F / 10</div>
+    <h2 class="finding-title">ITEMS OF HIGHEST PUBLIC INTEREST</h2>
+    <div class="finding-desc">The most widely-circulated materials in the subject's collection. Presented here as evidence of character.</div>
+    <div class="ranked-list" id="top-bookmarks"></div>
+    <div class="finding-punchline">
+      > FIELD NOTE: The subject's most treasured saves include a Jackass cast member's sobriety anniversary, a baked goods conspiracy, and a philosophical inquiry into whether sheep could survive without human intervention. The Bureau does not editorialize. The Bureau does not need to.
+    </div>
+  </section>
+
+  <!-- FINDING 07: TIMELINE -->
+  <section class="finding" id="f07">
+    <div class="finding-id">EXHIBIT G / 10</div>
+    <h2 class="finding-title">TEMPORAL ACTIVITY LOG</h2>
+    <div class="finding-desc">Annual save volume, plotted. The Bureau considers this a seismograph of the subject's relationship with the internet.</div>
+    <div class="histogram" id="year-histogram"></div>
+    <div class="finding-punchline">
+      > FIELD NOTE: Activity peaked in 2021 at 467 intercepts. A marked decline followed in 2022-2023. The Bureau investigated several hypotheses: personal growth, app fatigue, a new hobby involving sunlight. None could be confirmed. Activity resumed in 2024, suggesting the 2022-2023 period was not a recovery but a remission. The condition is chronic.
+    </div>
+  </section>
+
+  <!-- FINDING 08: DIGITAL HOARDER -->
+  <section class="finding" id="f08">
+    <div class="finding-id">EXHIBIT H / 10</div>
+    <h2 class="finding-title">MATERIALS SEIZED</h2>
+    <div class="finding-desc">External resources linked from the subject's collection. The Bureau notes these items were saved with apparent intent to revisit them. No evidence of revisitation was found.</div>
+    <div class="badge-row" id="link-badges"></div>
+    <div style="margin-top:24px;">
+      <div class="finding-desc" style="margin-bottom:8px;">EVIDENCE COMPOSITION:</div>
+      <div class="segment-bar" id="media-segments"></div>
+      <div class="segment-legend" id="media-legend"></div>
+    </div>
+    <div class="finding-punchline">
+      > FIELD NOTE: 106 open-source repositories saved with no record of cloning. 139 video links saved with no record of viewing. 23 academic papers saved with no record of reading past the abstract. The Bureau has assigned the subject a Digital Hoarding Index of 7.2 out of 10. This is within normal parameters. The normal parameters are very sad.
+    </div>
+  </section>
+
+  <!-- FINDING 09: PERSONALITY MATRIX -->
+  <section class="finding" id="f09">
+    <div class="finding-id">EXHIBIT I / 10</div>
+    <h2 class="finding-title">CROSS-REFERENCE MATRIX</h2>
+    <div class="finding-desc">Format vs. subject domain, cross-tabulated. The Bureau uses this grid to predict behavior. The darkest cell is where the subject actually lives. Everything else is tourism.</div>
+    <div id="heatmap-container"></div>
+    <div class="finding-punchline">
+      > FIELD NOTE: The intersection of "technique" and "AI" is where the subject resides most of the time. This is their apartment. The intersection of "opinion" and "media" is where they go to feel things. The rest of the grid represents places they visited once, took a photo, and left. The Bureau does not judge. The Bureau simply observes and takes very detailed notes.
+    </div>
+  </section>
+
+  <!-- FINDING 10: THE VERDICT -->
+  <section class="finding" id="f10">
+    <div class="finding-id">EXHIBIT J / 10</div>
+    <h2 class="finding-title">FINAL CLASSIFICATION</h2>
+    <div class="finding-desc">The Bureau has reviewed the evidence and reached a determination. This finding is not appealable, though the subject is free to bookmark this page and never look at it again.</div>
+    <div class="verdict-card">
+      <div class="verdict-archetype">THE ASPIRATIONAL GENERALIST</div>
+      <ul class="verdict-symptoms">
+        <li>Saves everything. Implements nothing. Believes saving is a form of doing.</li>
+        <li>Has bookmarked "How to wake up at 5 AM" content. Timestamp of save: after midnight.</li>
+        <li>Has monitored the output of 1,807 individuals without producing equivalent work.</li>
+        <li>Maintains a one-night-stand rate of 81% across all intellectual relationships.</li>
+        <li>Open-source repositories bookmarked: 106. Repositories cloned: [REDACTED AT SUBJECT'S REQUEST]</li>
+        <li>Private interests (health, politics) generate 5x the engagement of stated interests. Subject presents as a technologist. Subject's bookmark bar says otherwise.</li>
+        <li>Peak activity: 2021. Current trajectory: relapsing.</li>
+      </ul>
+      <div class="verdict-redemption">
+        > The Bureau would like to close this file with an observation that does not appear in our standard reporting templates.<br><br>
+        > 2,644 saves across 8 years, 15 domains, and 8 languages is not the profile of a hoarder. It is the profile of someone who finds the world genuinely interesting. The subject saves tutorials because they want to understand how things are made. They save opinions because they are forming their own. They save tools because they believe, each time, that the next one might change everything.<br><br>
+        > The Bureau's official position is that this is not a disorder. It is, on balance, a good way to be alive.<br><br>
+        <span class="cursor-blink">> FILE CLOSED. SUBJECT RELEASED.</span>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    BUREAU OF DIGITAL BEHAVIOR // BEHAVIORAL SCIENCES DIVISION // FORM 27-B STROKE 6<br>
+    GENERATED BY FIELD THEORY CLI // CLASSIFICATION ENGINE: HAIKU 4.5 // UNAUTHORIZED VIEWING IS DISCOURAGED BUT NOT TECHNICALLY ILLEGAL
+  </footer>
+
+</div>
+
+<script>
+/*__INJECTED_DATA__*/
+
+// ── UTILITIES ───────────────────────────────────────────────────────────────
+
+function fmt(n) {
+  return n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'K' : String(n);
+}
+
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function animateCount(el, target, duration = 1400, delay = 0) {
+  if (prefersReducedMotion) { el.textContent = target.toLocaleString(); el.classList.add('counted'); return; }
+  setTimeout(() => {
+    const start = performance.now();
+    const update = (now) => {
+      const t = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 5); // quint ease-out
+      el.textContent = Math.round(ease * target).toLocaleString();
+      if (t < 1) {
+        requestAnimationFrame(update);
+      } else {
+        el.classList.add('counted');
+      }
+    };
+    requestAnimationFrame(update);
+  }, delay);
+}
+
+// ── BOOT SEQUENCE ──────────────────────────────────────────────────────────
+
+const header = document.querySelector('.header');
+if (prefersReducedMotion) {
+  header.classList.add('booted');
+} else {
+  // Small delay so the page settles, then boot
+  setTimeout(() => header.classList.add('booted'), 100);
+}
+
+// ── TYPEWRITER for diagnosis ───────────────────────────────────────────────
+
+function typewriter(el, delay = 2400) {
+  if (prefersReducedMotion) return;
+  const html = el.innerHTML;
+  el.innerHTML = '';
+  el.style.opacity = '1';
+  el.style.transform = 'translateY(0)';
+  const chars = [...html];
+  let i = 0;
+  let inTag = false;
+  let buffer = '';
+
+  setTimeout(() => {
+    const tick = () => {
+      if (i >= chars.length) return;
+      const ch = chars[i];
+      if (ch === '<') inTag = true;
+      if (inTag) {
+        buffer += ch;
+        if (ch === '>') { inTag = false; el.innerHTML += buffer; buffer = ''; }
+        i++;
+        tick(); // fast-forward through tags
+        return;
+      }
+      el.innerHTML += ch;
+      i++;
+      setTimeout(tick, ch === '>' || ch === '\n' ? 0 : ch === '.' || ch === ':' ? 60 : 18);
+    };
+    tick();
+  }, delay);
+}
+
+const diagnosisEl = document.querySelector('.diagnosis');
+if (diagnosisEl && !prefersReducedMotion) {
+  typewriter(diagnosisEl, 2300);
+}
+
+// ── SCROLL REVEAL ───────────────────────────────────────────────────────────
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      // Stagger bar animations with longer cascade
+      entry.target.querySelectorAll('.bar-fill').forEach((bar, i) => {
+        setTimeout(() => { bar.style.width = bar.dataset.width; }, 400 + i * 70);
+      });
+      entry.target.querySelectorAll('.hist-bar').forEach((bar, i) => {
+        setTimeout(() => { bar.style.height = bar.dataset.height; }, 400 + i * 100);
+      });
+      entry.target.querySelectorAll('.segment').forEach((seg, i) => {
+        setTimeout(() => { seg.style.width = seg.dataset.width; }, 500 + i * 150);
+      });
+      // Stagger ranked items
+      entry.target.querySelectorAll('.ranked-item').forEach((item, i) => {
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(-12px)';
+        item.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        setTimeout(() => { item.style.opacity = '1'; item.style.transform = 'translateX(0)'; }, 400 + i * 80);
+      });
+      // Stagger pyramid tiers
+      entry.target.querySelectorAll('.pyramid-tier').forEach((tier, i) => {
+        tier.style.opacity = '0';
+        tier.style.transform = 'scaleX(0.3)';
+        tier.style.transition = 'opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)';
+        setTimeout(() => { tier.style.opacity = '1'; tier.style.transform = 'scaleX(1)'; }, 400 + i * 120);
+      });
+      // Stagger badges
+      entry.target.querySelectorAll('.badge').forEach((badge, i) => {
+        badge.style.opacity = '0';
+        badge.style.transform = 'scale(0.9)';
+        badge.style.transition = 'opacity 0.5s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)';
+        setTimeout(() => { badge.style.opacity = '1'; badge.style.transform = 'scale(1)'; }, 400 + i * 150);
+      });
+      // Stagger heatmap cells
+      entry.target.querySelectorAll('.heatmap-cell:not(.heatmap-header):not(.heatmap-row-label)').forEach((cell, i) => {
+        if (!cell.style.background || cell.style.background === 'transparent') return;
+        const bg = cell.style.background;
+        cell.style.background = 'transparent';
+        cell.style.transition = 'background 0.4s ease';
+        setTimeout(() => { cell.style.background = bg; }, 500 + i * 40);
+      });
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.finding').forEach(f => observer.observe(f));
+
+// ── RENDER FUNCTIONS ────────────────────────────────────────────────────────
+
+function renderBars(containerId, items, maxVal, colorClass = '') {
+  const el = document.getElementById(containerId);
+  items.forEach(item => {
+    const pct = (item.value / maxVal * 100).toFixed(1);
+    el.innerHTML += `
+      <div class="bar-row">
+        <div class="bar-label">${item.label}</div>
+        <div class="bar-track">
+          <div class="bar-fill ${colorClass}" data-width="${pct}%"></div>
+        </div>
+        <div class="bar-value">${item.display || item.value}</div>
+      </div>`;
+  });
+}
+
+function renderHistogram(containerId, items) {
+  const el = document.getElementById(containerId);
+  const maxVal = Math.max(...items.map(i => i.value));
+  const peakIdx = items.indexOf(items.find(i => i.value === maxVal));
+  items.forEach((item, i) => {
+    const pct = (item.value / maxVal * 100).toFixed(1);
+    el.innerHTML += `
+      <div class="hist-col">
+        <div class="hist-count">${item.value}</div>
+        <div class="hist-bar ${i === peakIdx ? 'peak' : ''}" data-height="${pct}%" style="height: 0;"></div>
+        <div class="hist-label">${item.label}</div>
+      </div>`;
+  });
+}
+
+// ── HERO COUNTERS ───────────────────────────────────────────────────────────
+
+// Counters start after the stats row fades in (delay 1500ms + 200ms for transition start)
+animateCount(document.getElementById('hero-bookmarks'), DATA.totals.bookmarks, 1800, 1100);
+animateCount(document.getElementById('hero-authors'), DATA.totals.authors, 1400, 1700);
+animateCount(document.getElementById('hero-years'), parseInt(DATA.totals.lastYear) - parseInt(DATA.totals.firstYear), 800, 1700);
+animateCount(document.getElementById('hero-langs'), DATA.totals.languages, 600, 1700);
+
+// ── FINDING 01: DOMAINS ─────────────────────────────────────────────────────
+
+const maxDomain = DATA.domains[0].count;
+renderBars('domain-bars',
+  DATA.domains.slice(0, 12).map(d => ({ label: d.name.toUpperCase(), value: d.count })),
+  maxDomain, 'cyan'
+);
+
+// ── FINDING 02: CATEGORIES ──────────────────────────────────────────────────
+
+const maxCat = DATA.categories[0].count;
+renderBars('category-bars',
+  DATA.categories.slice(0, 10).map(c => ({ label: c.name, value: c.count })),
+  maxCat, 'amber'
+);
+
+// ── FINDING 03: ENGAGEMENT BY DOMAIN ────────────────────────────────────────
+
+const maxEng = DATA.engagementByDomain[0].avgLikes;
+renderBars('eng-domain-bars',
+  DATA.engagementByDomain.slice(0, 10).map(d => ({
+    label: d.name.toUpperCase(),
+    value: d.avgLikes,
+    display: fmt(d.avgLikes) + ' avg'
+  })),
+  maxEng, 'red'
+);
+
+// ── FINDING 04: LIKE DISTRIBUTION ───────────────────────────────────────────
+
+const ld = DATA.likeDistribution;
+renderHistogram('like-histogram', [
+  { label: '<10', value: ld.under10 },
+  { label: '10-99', value: ld.to100 },
+  { label: '100-1K', value: ld.to1k },
+  { label: '1K-10K', value: ld.to10k },
+  { label: '10K-100K', value: ld.to100k },
+  { label: '100K+', value: ld.over100k },
+]);
+
+// ── FINDING 05: LOYALTY ─────────────────────────────────────────────────────
+
+const loy = DATA.authorLoyalty;
+const pyramidEl = document.getElementById('loyalty-pyramid');
+const tiers = [
+  { label: '5+ SAVES', value: loy.fivePlus, width: 30 },
+  { label: '3-4 SAVES', value: loy.threeFour, width: 45 },
+  { label: '2 SAVES', value: loy.twice, width: 65 },
+  { label: '1 SAVE (GHOSTED)', value: loy.once, width: 100 },
+];
+tiers.forEach(t => {
+  pyramidEl.innerHTML += `
+    <div class="pyramid-tier" style="width: ${t.width}%;">
+      <span class="pyramid-tier-label">${t.label}</span>
+      <span class="pyramid-tier-value">${t.value}</span>
+    </div>`;
+});
+
+const maxAuthor = loy.topAuthors[0].count;
+renderBars('top-authors',
+  loy.topAuthors.slice(0, 10).map(a => ({ label: '@' + a.handle, value: a.count })),
+  maxAuthor
+);
+
+// ── FINDING 06: TOP BOOKMARKS ───────────────────────────────────────────────
+
+const topBmEl = document.getElementById('top-bookmarks');
+DATA.topBookmarks.slice(0, 10).forEach((bm, i) => {
+  const tags = [bm.category, bm.domain].filter(Boolean).join(' / ');
+  topBmEl.innerHTML += `
+    <div class="ranked-item">
+      <div class="rank-num">${i + 1}</div>
+      <div>
+        <div class="rank-author">@${bm.author}</div>
+        <div class="rank-text">${bm.text}</div>
+      </div>
+      <div class="rank-meta">${fmt(bm.likes)} <span style="color:var(--text-dim);">likes</span></div>
+    </div>`;
+});
+
+// ── FINDING 07: YEAR TIMELINE ───────────────────────────────────────────────
+
+const years = Object.entries(DATA.yearDistribution).map(([y, c]) => ({ label: "'" + y.slice(2), value: c }));
+renderHistogram('year-histogram', years);
+
+// ── FINDING 08: LINK BADGES ─────────────────────────────────────────────────
+
+const badgeEl = document.getElementById('link-badges');
+const linkMap = {};
+DATA.linkDomains.forEach(d => { linkMap[d.domain] = d.count; });
+const badges = [
+  { label: 'GITHUB REPOS', count: linkMap['github.com'] || 0, color: 'var(--green)' },
+  { label: 'YOUTUBE VIDEOS', count: (linkMap['youtu.be'] || 0) + (linkMap['youtube.com'] || 0), color: 'var(--red)' },
+  { label: 'ARXIV PAPERS', count: linkMap['arxiv.org'] || 0, color: 'var(--cyan)' },
+];
+badges.forEach(b => {
+  badgeEl.innerHTML += `
+    <div class="badge">
+      <div class="badge-number" style="color:${b.color}">${b.count}</div>
+      <div class="badge-label">${b.label}</div>
+    </div>`;
+});
+
+const mb = DATA.mediaBreakdown;
+const segBar = document.getElementById('media-segments');
+segBar.innerHTML = `
+  <div class="segment" style="background:var(--green);width:0;" data-width="${mb.mediaPct}%"></div>
+  <div class="segment" style="background:var(--cyan);width:0;" data-width="${mb.linkPct}%"></div>
+  <div class="segment" style="background:var(--text-dim);width:0;" data-width="${mb.textPct}%"></div>`;
+
+document.getElementById('media-legend').innerHTML = `
+  <div class="segment-legend-item"><span class="segment-swatch" style="background:var(--green)"></span>Media ${mb.mediaPct}%</div>
+  <div class="segment-legend-item"><span class="segment-swatch" style="background:var(--cyan)"></span>Links ${mb.linkPct}%</div>
+  <div class="segment-legend-item"><span class="segment-swatch" style="background:var(--text-dim)"></span>Text ${mb.textPct}%</div>`;
+
+// ── FINDING 09: HEATMAP ─────────────────────────────────────────────────────
+
+const hm = DATA.heatmap;
+const hmEl = document.getElementById('heatmap-container');
+const cols = hm.cols.length + 1;
+let html = `<div class="heatmap-grid" style="grid-template-columns: 90px repeat(${hm.cols.length}, 1fr);">`;
+// Header row
+html += '<div class="heatmap-header"></div>';
+hm.cols.forEach(c => { html += `<div class="heatmap-header">${c}</div>`; });
+// Data rows
+const allCounts = Object.values(hm.cells);
+const maxHeat = Math.max(...allCounts, 1);
+hm.rows.forEach(row => {
+  html += `<div class="heatmap-row-label">${row}</div>`;
+  hm.cols.forEach(col => {
+    const count = hm.cells[`${row}|${col}`] || 0;
+    const intensity = count / maxHeat;
+    const bg = count > 0
+      ? `rgba(64, 255, 96, ${0.1 + intensity * 0.6})`
+      : 'transparent';
+    html += `<div class="heatmap-cell" style="background:${bg};" title="${row} × ${col}: ${count}">${count || ''}</div>`;
+  });
+});
+html += '</div>';
+hmEl.innerHTML = html;
+
+</script>
+</body>
+</html>

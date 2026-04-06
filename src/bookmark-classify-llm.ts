@@ -41,10 +41,12 @@ function detectEngine(): Engine | null {
   return null;
 }
 
+const LLM_MODEL = process.env.FT_LLM_MODEL || 'claude-haiku-4-5-20251001';
+
 function invokeEngine(engine: Engine, prompt: string): string {
   const bin = engine === 'claude' ? 'claude' : 'codex';
   const args = engine === 'claude'
-    ? ['-p', '--output-format', 'text', prompt]
+    ? ['-p', '--model', LLM_MODEL, '--output-format', 'text', prompt]
     : ['exec', prompt];
 
   return execFileSync(bin, args, {
