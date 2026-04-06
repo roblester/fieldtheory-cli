@@ -1,13 +1,13 @@
-# Field Theory CLI
+# Field Theory CLI (Windows Fork)
 
-Sync and store locally all of your X/Twitter bookmarks. Search, classify, and make them available to Claude Code, Codex, or any agent with shell access.
+Sync and store all of your X/Twitter bookmarks locally. Search, classify, and make them available to Claude Code, Codex, or any agent with shell access.
 
-Free and open source. Designed for Mac.
+Fork of [afar1/fieldtheory-cli](https://github.com/afar1/fieldtheory-cli) with full Windows support.
 
 ## Install
 
 ```bash
-npm install -g fieldtheory
+npm install -g .
 ```
 
 Requires Node.js 20+ and Google Chrome.
@@ -27,7 +27,30 @@ ft categories
 ft stats
 ```
 
-On first run, `ft sync` extracts your X session from Chrome and downloads your bookmarks into `~/.ft-bookmarks/`.
+On first run, `ft sync` connects to Chrome via the DevTools Protocol and downloads your bookmarks into `~/.ft-bookmarks/`.
+
+## Platform support
+
+| Feature | macOS | Windows | Linux |
+|---------|-------|---------|-------|
+| Chrome session sync (`ft sync`) | Yes (Keychain) | Yes (CDP) | No* |
+| OAuth API sync (`ft sync --api`) | Yes | Yes | Yes |
+| Search, classify, viz | Yes | Yes | Yes |
+| Bookmark visualizer | Yes | Yes | Yes |
+
+\*Linux support could be added via libsecret/GNOME Keyring or CDP. Contributions welcome.
+
+### Windows sync details
+
+On Windows, Chrome 127+ uses App-Bound Encryption which prevents direct cookie file access. This fork uses the **Chrome DevTools Protocol** instead — it connects to a running Chrome instance and asks Chrome for the decrypted cookies directly.
+
+When you run `ft sync`, the tool:
+1. Checks if Chrome is running with a debug port
+2. If not, launches Chrome with `--remote-debugging-port=9222` (uses the Windows 8.3 short path to bypass Chrome's debug port restriction)
+3. Extracts `ct0` and `auth_token` cookies via CDP `Network.getAllCookies`
+4. Syncs bookmarks via X's GraphQL API
+
+See [docs/guide-to-syncing-x-bookmarks.md](docs/guide-to-syncing-x-bookmarks.md) for the full Windows guide with troubleshooting.
 
 ## Commands
 
@@ -54,29 +77,44 @@ On first run, `ft sync` extracts your X session from Chrome and downloads your b
 
 ## Agent integration
 
-Now you can ask your agent:
+Tell your agent to use the `ft` CLI:
 
-> "What have I bookmarked about cancer research in the last three years and how has it progressed?"
+> "What have I bookmarked about cancer research in the last three years?"
 
-> "I bookmarked a number of new open source AI memory tools. Pick the best one and figure out how to incorporate it in this repo."
+> "Find all the AI tools I bookmarked and pick the best one for memory management."
 
-> "Every day please sync any new X bookmarks using the Field Theory CLI."
+> "Sync my X bookmarks every morning."
 
-Works with Claude Code, Codex, or any agent with shell access. Just tell your agent to use the `ft` CLI.
+Works with Claude Code, Codex, or any agent with shell access.
 
-## Scheduling
+## Bookmark visualizer
+
+Generate an interactive HTML report of your bookmarking patterns:
 
 ```bash
-# Sync every morning at 7am
-0 7 * * * ft sync
-
-# Sync and classify every morning
-0 7 * * * ft sync --classify
+node scripts/extract-viz-data.mjs > viz/data.json
+node scripts/build-viz.mjs
+# Open viz/you-are-what-you-bookmark.html in a browser
 ```
+
+The visualizer shows domain/category breakdowns, engagement analysis, author loyalty patterns, a timeline, and a personality assessment — styled as a retro terminal intelligence dossier.
+
+## Classification
+
+LLM classification uses `claude -p` (Claude Code CLI) or `codex exec` — whichever is installed. Defaults to Haiku 4.5 for speed. Override with:
+
+```bash
+export FT_LLM_MODEL=claude-sonnet-4-6
+ft classify
+```
+
+Categories: tool, technique, opinion, launch, research, commerce, security, and LLM-generated categories for content that doesn't fit.
+
+Domains: ai, design, media, gaming, startups, hardware, web-dev, finance, health, politics, and more.
 
 ## Data
 
-All data is stored locally at `~/.ft-bookmarks/`:
+All data stays local at `~/.ft-bookmarks/`:
 
 ```
 ~/.ft-bookmarks/
@@ -86,48 +124,26 @@ All data is stored locally at `~/.ft-bookmarks/`:
   oauth-token.json        # OAuth token (if using API mode, chmod 600)
 ```
 
-Override the location with `FT_DATA_DIR`:
+Override with `FT_DATA_DIR`:
 
 ```bash
 export FT_DATA_DIR=/path/to/custom/dir
 ```
 
-To remove all data: `rm -rf ~/.ft-bookmarks`
-
-## Categories
-
-| Category | What it catches |
-|----------|----------------|
-| **tool** | GitHub repos, CLI tools, npm packages, open-source projects |
-| **security** | CVEs, vulnerabilities, exploits, supply chain |
-| **technique** | Tutorials, demos, code patterns, "how I built X" |
-| **launch** | Product launches, announcements, "just shipped" |
-| **research** | ArXiv papers, studies, academic findings |
-| **opinion** | Takes, analysis, commentary, threads |
-| **commerce** | Products, shopping, physical goods |
-
-Use `ft classify` for LLM-powered classification that catches what regex misses.
-
-## Platform support
-
-| Feature | macOS | Linux | Windows |
-|---------|-------|-------|---------|
-| Chrome session sync (`ft sync`) | Yes | No* | No* |
-| OAuth API sync (`ft sync --api`) | Yes | Yes | Yes |
-| Search, list, classify, viz | Yes | Yes | Yes |
-
-\*Chrome session extraction uses macOS Keychain. On other platforms, use `ft auth` + `ft sync --api`.
-
 ## Security
 
-**Your data stays local.** No telemetry, no analytics, nothing phoned home. The CLI only makes network requests to X's API during sync.
+**Your data stays local.** No telemetry, no analytics, nothing phoned home.
 
-**Chrome session sync** reads cookies from Chrome's local database, uses them for the sync request, and discards them. Cookies are never stored separately.
+**Chrome session sync** connects to Chrome's debug port to read cookies. Cookies are used for the sync request and discarded. On macOS, cookies are read from Chrome's local database via Keychain.
 
-**OAuth tokens** are stored with `chmod 600` (owner-only). Treat `~/.ft-bookmarks/oauth-token.json` like a password.
+**OAuth tokens** are stored with `chmod 600` (owner-only).
 
-**The default sync uses X's internal GraphQL API**, the same API that x.com uses in your browser. For the official v2 API, use `ft auth` + `ft sync --api`.
+**The default sync uses X's internal GraphQL API**, the same API that x.com uses in your browser.
+
+## Docs
+
+- [Windows sync guide](docs/guide-to-syncing-x-bookmarks.md) — setup, troubleshooting, and security notes
 
 ## License
 
-MIT — [fieldtheory.dev/cli](https://fieldtheory.dev/cli)
+MIT — based on [fieldtheory.dev/cli](https://fieldtheory.dev/cli)
