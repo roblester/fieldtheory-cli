@@ -244,7 +244,10 @@ export async function extractChromeXCookies(
     );
   }
 
-  const dbPath = join(chromeUserDataDir, profileDirectory, 'Cookies');
+  // Chrome 96+ moved Cookies into a Network/ subdirectory
+  const legacyPath = join(chromeUserDataDir, profileDirectory, 'Cookies');
+  const modernPath = join(chromeUserDataDir, profileDirectory, 'Network', 'Cookies');
+  const dbPath = existsSync(modernPath) ? modernPath : legacyPath;
   if (!existsSync(dbPath)) {
     throw new Error(
       `Chrome Cookies database not found at: ${dbPath}\n` +
