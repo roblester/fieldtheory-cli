@@ -242,25 +242,92 @@ interface CDPCookie {
   domain: string;
 }
 
-async function extractCookiesViaCDP(): Promise<ChromeCookieResult> {
-  // Check if Chrome is running with the debug port
+function findChromeExe(): string {
+  const candidates = [
+    join(process.env.PROGRAMFILES ?? '', 'Google', 'Chrome', 'Application', 'chrome.exe'),
+    join(process.env['PROGRAMFILES(X86)'] ?? '', 'Google', 'Chrome', 'Application', 'chrome.exe'),
+    join(process.env.LOCALAPPDATA ?? '', 'Google', 'Chrome', 'Application', 'chrome.exe'),
+  ];
+  for (const p of candidates) {
+    if (existsSync(p)) return p;
+  }
+  throw new Error(
+    'Could not find Google Chrome installation.\n' +
+    'Checked:\n' + candidates.map(c => `  ${c}`).join('\n')
+  );
+}
+
+function getShortPath(longPath: string): string {
+  // Use PowerShell to get the 8.3 short path name.
+  // Chrome blocks --remote-debugging-port on the default user-data-dir by
+  // comparing the path string literally. The 8.3 short path bypasses this check.
+  try {
+    return execFileSync('powershell', [
+      '-NoProfile', '-NonInteractive', '-Command',
+      `(New-Object -ComObject Scripting.FileSystemObject).GetFolder('${longPath.replace(/'/g, "''")}').ShortPath`,
+    ], { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000 }).trim();
+  } catch {
+    return longPath;
+  }
+}
+
+async function launchChromeWithDebugging(chromeUserDataDir: string, profileDirectory: string, port: number): Promise<void> {
+  const chromeExe = findChromeExe();
+  // Use the 8.3 short path to bypass Chrome's debug port restriction on the default data dir
+  const shortDataDir = getShortPath(chromeUserDataDir);
+
+  const { spawn } = await import('node:child_process');
+  const child = spawn(chromeExe, [
+    `--remote-debugging-port=${port}`,
+    `--user-data-dir=${shortDataDir}`,
+    `--profile-directory=${profileDirectory}`,
+    '--no-first-run',
+    '--no-default-browser-check',
+  ], {
+    stdio: 'ignore',
+    detached: true,
+    windowsHide: true,
+  });
+  child.unref();
+
+  // Wait for the debug port to become available
+  const start = Date.now();
+  while (Date.now() - start < 20000) {
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/json/version`);
+      if (res.ok) return;
+    } catch { /* not ready yet */ }
+    await new Promise(r => setTimeout(r, 500));
+  }
+  throw new Error(`Chrome did not start with debugging port ${port} within 20s.`);
+}
+
+async function extractCookiesViaCDP(
+  chromeUserDataDir: string,
+  profileDirectory: string,
+): Promise<ChromeCookieResult> {
+  // Check if Chrome is already running with the debug port
   let versionData: { webSocketDebuggerUrl?: string; Browser?: string };
   try {
     const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/version`);
     versionData = await res.json() as typeof versionData;
   } catch {
-    throw new Error(
-      'Could not connect to Chrome on port 9222.\n\n' +
-      'On Windows, ft sync requires Chrome to be running with remote debugging.\n\n' +
-      'Steps:\n' +
-      '  1. Close Chrome completely (check system tray)\n' +
-      '  2. Relaunch Chrome with this command (or create a shortcut):\n\n' +
-      '     chrome.exe --remote-debugging-port=9222\n\n' +
-      '  3. Make sure you are logged into x.com\n' +
-      '  4. Run ft sync again\n\n' +
-      'Tip: Create a Windows shortcut with the --remote-debugging-port=9222 flag\n' +
-      'so you can always launch Chrome this way.'
-    );
+    // Chrome isn't running with debugging — try to launch it
+    try {
+      process.stderr.write('  Launching Chrome with remote debugging...\n');
+      await launchChromeWithDebugging(chromeUserDataDir, profileDirectory, CDP_PORT);
+      const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/version`);
+      versionData = await res.json() as typeof versionData;
+    } catch {
+      throw new Error(
+        'Could not connect to Chrome on port 9222.\n\n' +
+        'On Windows, ft sync needs Chrome with remote debugging.\n\n' +
+        'Option A: Close Chrome, then run ft sync (it will relaunch Chrome)\n' +
+        'Option B: Launch Chrome yourself with:\n\n' +
+        '  chrome.exe --remote-debugging-port=9222\n\n' +
+        'Then run ft sync again.'
+      );
+    }
   }
 
   // Get a page target to connect to
@@ -341,7 +408,7 @@ export async function extractChromeXCookies(
   // be decrypted without SYSTEM-level access. Use Chrome DevTools Protocol instead —
   // launch a headless Chrome that shares the user's profile and ask it for cookies.
   if (os === 'win32') {
-    return extractCookiesViaCDP();
+    return extractCookiesViaCDP(chromeUserDataDir, profileDirectory);
   }
 
   let key: Buffer;
