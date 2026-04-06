@@ -225,17 +225,128 @@ export async function queryCookiesFromBuffer(
   }
 }
 
+// ── CDP (Chrome DevTools Protocol) cookie extraction ────────────────────────
+// On Windows, Chrome 127+ uses App-Bound Encryption (v20 prefix) which cannot
+// be decrypted without SYSTEM-level DPAPI access. Instead, we connect to a
+// running Chrome instance with remote debugging enabled and ask it for cookies.
+//
+// The user must launch Chrome with: --remote-debugging-port=9222
+// Chrome blocks remote debugging on the default user-data-dir, so the user
+// must close Chrome normally first, then relaunch with the debug flag.
+
+const CDP_PORT = 9222;
+
+interface CDPCookie {
+  name: string;
+  value: string;
+  domain: string;
+}
+
+async function extractCookiesViaCDP(): Promise<ChromeCookieResult> {
+  // Check if Chrome is running with the debug port
+  let versionData: { webSocketDebuggerUrl?: string; Browser?: string };
+  try {
+    const res = await fetch(`http://127.0.0.1:${CDP_PORT}/json/version`);
+    versionData = await res.json() as typeof versionData;
+  } catch {
+    throw new Error(
+      'Could not connect to Chrome on port 9222.\n\n' +
+      'On Windows, ft sync requires Chrome to be running with remote debugging.\n\n' +
+      'Steps:\n' +
+      '  1. Close Chrome completely (check system tray)\n' +
+      '  2. Relaunch Chrome with this command (or create a shortcut):\n\n' +
+      '     chrome.exe --remote-debugging-port=9222\n\n' +
+      '  3. Make sure you are logged into x.com\n' +
+      '  4. Run ft sync again\n\n' +
+      'Tip: Create a Windows shortcut with the --remote-debugging-port=9222 flag\n' +
+      'so you can always launch Chrome this way.'
+    );
+  }
+
+  // Get a page target to connect to
+  const targetsRes = await fetch(`http://127.0.0.1:${CDP_PORT}/json`);
+  const targets = await targetsRes.json() as Array<{ webSocketDebuggerUrl?: string; type?: string }>;
+  const page = targets.find(t => t.type === 'page');
+  const wsUrl = page?.webSocketDebuggerUrl ?? versionData.webSocketDebuggerUrl;
+
+  if (!wsUrl) {
+    throw new Error('Connected to Chrome debug port but could not get a WebSocket URL.');
+  }
+
+  // Connect via WebSocket and request all cookies
+  const cookies = await new Promise<CDPCookie[]>((resolve, reject) => {
+    const ws = new WebSocket(wsUrl);
+    const timer = setTimeout(() => {
+      ws.close();
+      reject(new Error('CDP WebSocket timed out after 10s'));
+    }, 10000);
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ id: 1, method: 'Network.getAllCookies' }));
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(String(event.data));
+        if (msg.id === 1) {
+          clearTimeout(timer);
+          ws.close();
+          if (msg.error) {
+            reject(new Error(`CDP error: ${msg.error.message}`));
+          } else {
+            resolve(msg.result?.cookies ?? []);
+          }
+        }
+      } catch (e) {
+        clearTimeout(timer);
+        ws.close();
+        reject(e);
+      }
+    };
+
+    ws.onerror = (err) => {
+      clearTimeout(timer);
+      reject(new Error(`CDP WebSocket error: ${err}`));
+    };
+  });
+
+  // Filter for X/Twitter cookies
+  const xCookies = cookies.filter(
+    c => c.domain === '.x.com' || c.domain === '.twitter.com'
+  );
+  const ct0 = xCookies.find(c => c.name === 'ct0')?.value;
+  const authToken = xCookies.find(c => c.name === 'auth_token')?.value;
+
+  if (!ct0) {
+    throw new Error(
+      'Connected to Chrome but no ct0 cookie found for x.com.\n' +
+      'This means you are not logged into X in this Chrome session.\n\n' +
+      'Fix: Open https://x.com in Chrome, log in, then run ft sync again.'
+    );
+  }
+
+  const cookieParts = [`ct0=${ct0}`];
+  if (authToken) cookieParts.push(`auth_token=${authToken}`);
+
+  return { csrfToken: ct0, cookieHeader: cookieParts.join('; ') };
+}
+
 export async function extractChromeXCookies(
   chromeUserDataDir: string,
   profileDirectory = 'Default'
 ): Promise<ChromeCookieResult> {
   const os = platform();
 
+  // On Windows, Chrome 127+ uses App-Bound Encryption (v20 cookies) which cannot
+  // be decrypted without SYSTEM-level access. Use Chrome DevTools Protocol instead —
+  // launch a headless Chrome that shares the user's profile and ask it for cookies.
+  if (os === 'win32') {
+    return extractCookiesViaCDP();
+  }
+
   let key: Buffer;
   if (os === 'darwin') {
     key = getMacOSChromeKey();
-  } else if (os === 'win32') {
-    key = getWindowsChromeKey(chromeUserDataDir);
   } else {
     throw new Error(
       `Direct cookie extraction is currently supported on macOS and Windows.\n` +
