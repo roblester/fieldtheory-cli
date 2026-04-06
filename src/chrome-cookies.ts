@@ -256,12 +256,15 @@ export async function extractChromeXCookies(
     );
   }
 
-  // Read the Cookies DB into memory via sql.js (cross-platform, avoids sqlite3 CLI)
+  // Read the Cookies DB into memory via sql.js (cross-platform, avoids sqlite3 CLI).
+  // On macOS, Chrome uses shared locks so we can copy the file while Chrome runs.
+  // On Windows, Chrome holds an exclusive lock — the file cannot be read or copied
+  // while Chrome is running. The user must close Chrome first.
   let dbBuffer: Buffer;
   try {
     dbBuffer = readFileSync(dbPath);
   } catch {
-    // DB may be locked by Chrome — try a copy
+    // DB may be locked — try a copy (works on macOS, may fail on Windows)
     const tmpDb = join(tmpdir(), `ft-cookies-${randomUUID()}.db`);
     try {
       copyFileSync(dbPath, tmpDb);
@@ -270,8 +273,11 @@ export async function extractChromeXCookies(
       throw new Error(
         `Could not read Chrome Cookies database.\n` +
         `Path: ${dbPath}\n` +
-        `Error: ${e2.message}\n` +
-        'Fix: If Chrome is open, close it and retry. The database may be locked.'
+        `Error: ${e2.message}\n\n` +
+        'On Windows, Chrome holds an exclusive lock on the Cookies file.\n' +
+        'Fix: Close Chrome completely (check the system tray — Chrome often\n' +
+        'runs in the background), then retry.\n\n' +
+        'Alternatively, use the API method: ft auth && ft sync --api'
       );
     } finally {
       try { unlinkSync(tmpDb); } catch {}
