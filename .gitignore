@@ -4,3 +4,5 @@ dist/
 .env
 .env.local
 viz/data.json
+viz/narration.json
+.env.local

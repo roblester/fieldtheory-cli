@@ -29,7 +29,10 @@
   --font-mono: 'JetBrains Mono', 'Space Mono', 'Courier New', monospace;
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  scroll-snap-type: y mandatory;
+}
 
 body {
   background: var(--bg);
@@ -80,7 +83,7 @@ body::before {
   97% { opacity: 0.98; }
   98% { opacity: 1; }
 }
-body { animation: flicker 6s infinite; }
+/* body { animation: flicker 6s infinite; } — disabled: was causing fixed elements to flash */
 
 /* Noise/grain texture via SVG data URI */
 .container {
@@ -119,20 +122,23 @@ html::after {
 .header {
   padding: 80px 0 64px;
   border-bottom: 2px solid var(--border);
-  margin-bottom: 80px;
+  margin-bottom: 0;
   position: relative;
-  min-height: 50vh;
+  min-height: 100vh;
+  height: 100vh;
+  scroll-snap-align: start;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 @media (min-width: 1200px) {
-  .header { padding: 120px 0 80px; margin-bottom: 120px; min-height: 60vh; }
+  .header { padding: 80px 0; }
 }
 
 @media (min-width: 1600px) {
-  .header { padding: 140px 0 96px; margin-bottom: 140px; }
+  .header { padding: 96px 0; }
 }
 
 .classification {
@@ -281,7 +287,17 @@ html::after {
 /* ── SECTIONS ───────────────────────────────── */
 
 .finding {
-  margin-bottom: 96px;
+  margin-bottom: 0;
+  position: relative;
+  min-height: 100vh;
+  height: 100vh;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 5vh 0;
+  overflow: clip;
 }
 
 /* Children stagger in individually */
@@ -360,23 +376,23 @@ html::after {
 }
 
 .finding-punchline {
-  margin-top: 24px;
-  padding: 14px 18px;
+  margin-top: 28px;
+  padding: 18px 22px;
   border-left: 3px solid var(--green);
   background: linear-gradient(90deg, rgba(64, 255, 96, 0.06) 0%, transparent 60%);
   color: var(--green);
-  font-size: 12px;
-  line-height: 1.8;
+  font-size: 14px;
+  line-height: 1.9;
   position: relative;
   text-shadow: 0 0 8px rgba(64, 255, 96, 0.12);
 }
 
 .finding-punchline::before {
-  content: 'FIELD NOTE';
+  content: 'FIELD NOTE #' attr(data-note);
   position: absolute;
-  top: -8px;
+  top: -9px;
   left: 12px;
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 3px;
   color: var(--green-dim);
   background: var(--bg);
@@ -593,15 +609,15 @@ html::after {
 }
 
 .heatmap-cell {
-  aspect-ratio: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text);
   border: 1px solid var(--border);
   transition: background 0.3s, border-color 0.3s;
-  min-height: 52px;
+  min-height: 36px;
+  padding: 8px 4px;
 }
 
 .heatmap-cell:hover {
@@ -610,11 +626,11 @@ html::after {
 }
 
 @media (min-width: 900px) {
-  .heatmap-cell { min-height: 72px; font-size: 13px; }
+  .heatmap-cell { min-height: 42px; font-size: 13px; }
 }
 
 @media (min-width: 1400px) {
-  .heatmap-cell { min-height: 88px; font-size: 15px; font-weight: 500; }
+  .heatmap-cell { min-height: 48px; font-size: 14px; font-weight: 500; }
 }
 
 .heatmap-header {
@@ -845,16 +861,16 @@ html::after {
   .bar-track { height: 14px; }
   .badge-row { flex-direction: column; }
   .heatmap-cell { min-height: 36px; font-size: 9px; }
-  .finding { margin-bottom: 64px; }
+  .finding { padding: 3vh 0; }
   .verdict-card { padding: 24px; }
 }
 
 /* Large desktop — use the space */
 @media (min-width: 1200px) {
-  .finding { margin-bottom: 140px; }
+  .finding { padding: 4vh 0; }
   .finding-id { font-size: 10px; letter-spacing: 5px; }
   .finding-desc { max-width: 720px; font-size: 13px; }
-  .finding-punchline { font-size: 13px; padding: 18px 24px; }
+  .finding-punchline { font-size: 15px; padding: 22px 28px; }
   .bar-chart { gap: 10px; }
   .bar-value { font-size: 13px; }
   .ranked-item { padding: 12px 20px; }
@@ -877,9 +893,9 @@ html::after {
 
 /* Extra large — ultrawide monitors */
 @media (min-width: 1600px) {
-  .finding { margin-bottom: 160px; }
+  .finding { padding: 3vh 0; }
   .finding-desc { font-size: 14px; max-width: 800px; }
-  .finding-punchline { font-size: 14px; }
+  .finding-punchline { font-size: 16px; line-height: 2; }
   .verdict-card { padding: 64px; }
   .verdict-symptoms li { font-size: 15px; }
   .verdict-redemption { font-size: 17px; }
@@ -920,9 +936,462 @@ html::after {
   height: 10px;
   display: inline-block;
 }
+
+/* ── BOOT OVERLAY ──────────────────────────── */
+
+.boot-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.boot-overlay.dismissed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.boot-terminal {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--green);
+  text-shadow: 0 0 8px rgba(64, 255, 96, 0.4);
+  max-width: 600px;
+  width: 90%;
+  line-height: 2.2;
+}
+
+.boot-line {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.boot-line.visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.boot-line .ok { color: var(--amber); }
+.boot-line .fail { color: var(--red); }
+.boot-line .dim { color: var(--text-dim); }
+
+.boot-progress {
+  width: 100%;
+  height: 2px;
+  background: var(--border);
+  margin-top: 20px;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.boot-progress.visible { opacity: 1; transition: opacity 0.3s; }
+
+.boot-begin {
+  margin-top: 32px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: var(--amber);
+  background: transparent;
+  border: 1px solid var(--amber-dim);
+  padding: 12px 32px;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.3s, box-shadow 0.3s;
+  pointer-events: none;
+}
+
+.boot-begin.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.boot-begin:hover {
+  border-color: var(--amber);
+  box-shadow: 0 0 20px rgba(255, 192, 64, 0.15);
+}
+
+.boot-begin:active {
+  transform: scale(0.97);
+}
+
+.boot-progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--green);
+  box-shadow: 0 0 8px rgba(64, 255, 96, 0.6);
+  transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── SCROLL PROGRESS BAR ──────────────────── */
+
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber-glow), 0 0 20px rgba(255, 192, 64, 0.15);
+  z-index: 10001;
+}
+
+.scroll-progress-label {
+  position: fixed;
+  top: 8px;
+  right: 16px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--amber-dim);
+  z-index: 10001;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.scroll-progress-label.visible { opacity: 1; }
+
+/* ── INTERLUDES ────────────────────────────── */
+
+.interlude {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  height: 100vh;
+  scroll-snap-align: start;
+  margin: 0;
+  opacity: 0;
+  transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.interlude.visible { opacity: 1; }
+
+.interlude-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: center;
+  opacity: 0.5;
+  max-width: 400px;
+  line-height: 2;
+}
+
+/* ── CLASSIFIED STAMP ─────────────────────── */
+
+.stamp {
+  position: absolute;
+  top: 12px;
+  right: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--red);
+  border: 2px solid var(--red);
+  padding: 4px 14px;
+  transform: rotate(12deg) scale(0);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: 0 0 12px rgba(255, 64, 64, 0.15);
+}
+
+.finding.visible .stamp {
+  animation: stamp-slam 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: 800ms;
+}
+
+@keyframes stamp-slam {
+  0% { transform: rotate(12deg) scale(3); opacity: 0; }
+  60% { transform: rotate(-2deg) scale(0.95); opacity: 0.8; }
+  80% { transform: rotate(1deg) scale(1.02); opacity: 0.7; }
+  100% { transform: rotate(-3deg) scale(1); opacity: 0.6; }
+}
+
+/* ── AUDIO CONTROL ────────────────────────── */
+
+.audio-control {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.3s, color 0.3s, box-shadow 0.3s;
+}
+
+.audio-control:hover {
+  border-color: var(--amber-dim);
+  color: var(--amber);
+}
+
+.audio-control.active {
+  border-color: var(--green-dim);
+  color: var(--green);
+  box-shadow: 0 0 12px rgba(64, 255, 96, 0.15);
+}
+
+.audio-label {
+  position: fixed;
+  bottom: 30px;
+  right: 76px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  z-index: 99999;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.audio-control:hover ~ .audio-label { opacity: 1; }
+.audio-control.active ~ .audio-label { opacity: 1; }
+
+/* ── END CREDITS ──────────────────────────── */
+
+.end-credits {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.5s ease;
+  cursor: pointer;
+}
+
+.end-credits.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.end-credits-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--amber-dim);
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.end-credits.active .end-credits-text { opacity: 1; transition-delay: 0.8s; }
+
+.end-credits-sub {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  margin-top: 12px;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.end-credits.active .end-credits-sub { opacity: 0.4; transition-delay: 2s; }
+
+.end-credits-cursor {
+  margin-top: 32px;
+  color: var(--green-dim);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.end-credits.active .end-credits-cursor { opacity: 1; transition-delay: 3s; }
+.end-credits.active .end-credits-cursor::after {
+  content: '_';
+  animation: blink 1s step-end infinite;
+}
+
+/* ── VHS TRACKING LINE ────────────────────── */
+
+@keyframes vhs-track {
+  0% { top: -4px; }
+  100% { top: 100%; }
+}
+
+.vhs-line {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.04);
+  z-index: 9996;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.vhs-line.active {
+  opacity: 1;
+  animation: vhs-track 3s linear infinite;
+}
+
+/* ── SECTION TRANSITION FLASH ─────────────── */
+
+.section-flash {
+  position: fixed;
+  inset: 0;
+  background: rgba(64, 255, 96, 0.03);
+  z-index: 9995;
+  pointer-events: none;
+  opacity: 0;
+}
+
+@keyframes flash-cut {
+  0% { opacity: 1; filter: hue-rotate(20deg); }
+  30% { opacity: 0.5; filter: hue-rotate(-10deg); }
+  100% { opacity: 0; filter: none; }
+}
+
+.section-flash.fired {
+  animation: flash-cut 0.25s ease-out forwards;
+}
+
+/* ── NAV HINT ─────────────────────────── */
+
+.nav-hint {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  z-index: 10010;
+  pointer-events: none;
+}
+
+.nav-hint.visible { opacity: 0.5; }
+
+.slide-counter {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  z-index: 10010;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.slide-counter.visible { opacity: 0.5; }
+
+/* ── NARRATION WORD SYNC ──────────────── */
+
+.fn-prefix {
+  color: var(--green-dim);
+  opacity: 0.5;
+}
+
+.nw {
+  transition: color 0.15s ease, text-shadow 0.15s ease;
+}
+
+.nw-pending {
+  color: var(--green-dim);
+  text-shadow: none;
+}
+
+.nw-active {
+  color: var(--amber-hot);
+  text-shadow: 0 0 10px rgba(255, 224, 112, 0.5), 0 0 24px rgba(255, 192, 64, 0.2);
+}
+
+.nw-spoken {
+  color: var(--green);
+  text-shadow: 0 0 8px rgba(64, 255, 96, 0.2);
+}
+
+/* Verdict redemption — also animate */
+.verdict-redemption .nw-pending { color: var(--green-dim); text-shadow: none; }
+.verdict-redemption .nw-active { color: var(--amber-hot); text-shadow: 0 0 10px rgba(255, 224, 112, 0.5); }
+.verdict-redemption .nw-spoken { color: var(--green); text-shadow: 0 0 10px rgba(64, 255, 96, 0.2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-overlay { display: none !important; }
+  .interlude { opacity: 1 !important; }
+  .stamp { opacity: 0.6 !important; transform: rotate(-3deg) scale(1) !important; }
+  .end-credits, .vhs-line, .section-flash { display: none !important; }
+  .nw { transition: none !important; }
+}
 </style>
 </head>
 <body>
+
+<!-- BOOT OVERLAY -->
+<div class="boot-overlay" id="boot-overlay">
+  <div class="boot-terminal">
+    <div class="boot-line">> BUREAU OF DIGITAL BEHAVIOR // TERMINAL v4.2.1</div>
+    <div class="boot-line">> INITIALIZING BEHAVIORAL ANALYSIS MODULE... <span class="ok">[OK]</span></div>
+    <div class="boot-line">> DECRYPTING SUBJECT FILE... <span class="ok">[OK]</span></div>
+    <div class="boot-line">> CROSS-REFERENCING 2,644 INTERCEPTED SAVES...</div>
+    <div class="boot-line">> CLEARANCE VERIFIED // <span class="fail">EYES ONLY</span></div>
+    <div class="boot-line">> LOADING DOSSIER...</div>
+    <div class="boot-progress">
+      <div class="boot-progress-fill"></div>
+    </div>
+    <button class="boot-begin" id="boot-begin">&#9654; BEGIN BRIEFING</button>
+  </div>
+</div>
+
+<!-- SCROLL PROGRESS -->
+<div class="scroll-progress" id="scroll-progress"></div>
+<div class="scroll-progress-label" id="scroll-progress-label">DOSSIER: 0%</div>
+
+<!-- VHS TRACKING LINE -->
+<div class="vhs-line" id="vhs-line"></div>
+
+<!-- SECTION TRANSITION FLASH -->
+<div class="section-flash" id="section-flash"></div>
+
+<!-- AUDIO CONTROLS -->
+<button class="audio-control" id="audio-control" title="Toggle narration">&#9678;</button>
+<div class="audio-label">NARRATION</div>
+
+<!-- NAV -->
+<div class="nav-hint" id="nav-hint">&#8594; PRESS ARROW KEYS TO ADVANCE</div>
+<div class="slide-counter" id="slide-counter"></div>
+
+<!-- END CREDITS -->
+<div class="end-credits" id="end-credits">
+  <div class="end-credits-text">FILE CLOSED // SUBJECT RELEASED</div>
+  <div class="end-credits-sub">BUREAU OF DIGITAL BEHAVIOR // BEHAVIORAL SCIENCES DIVISION</div>
+  <div class="end-credits-cursor"></div>
+</div>
 
 <div class="container">
 
@@ -958,8 +1427,8 @@ html::after {
     <h2 class="finding-title">SUBJECT MATTER ALLOCATION</h2>
     <div class="finding-desc">Topical distribution of saved materials. Presented without commentary, though the commentary writes itself.</div>
     <div class="bar-chart" id="domain-bars"></div>
-    <div class="finding-punchline">
-      > FIELD NOTE: Over 60% of intercepts fall within three domains. Subject appears to be a design-curious AI enthusiast who occasionally remembers that the physical world exists. The 4% politics allocation is consistent with an "I should probably stay informed" impulse that activates every 2-4 years, usually in November.
+    <div class="finding-punchline" data-note="1">
+      > Over 60% of intercepts fall within three domains. Subject appears to be a design-curious AI enthusiast who occasionally remembers that the physical world exists. The 4% politics allocation is consistent with an "I should probably stay informed" impulse that activates every 2-4 years, usually in November.
     </div>
   </section>
 
@@ -969,19 +1438,25 @@ html::after {
     <h2 class="finding-title">STATED INTENTIONS vs. ACTUAL BEHAVIOR</h2>
     <div class="finding-desc">Content format breakdown. The Bureau notes a significant gap between what the subject saves and what the subject does with it.</div>
     <div class="bar-chart" id="category-bars"></div>
-    <div class="finding-punchline">
-      > FIELD NOTE: 31% tutorials. 22% opinions. 17% tools. The subject saves how-tos they will never follow, perspectives they already hold, and software they will install, open once, and never return to. This pattern is classified internally as "Collector Syndrome." It is not dangerous, but it is very, very common. We have a whole wing.
+    <div class="finding-punchline" data-note="2">
+      > 31% tutorials. 22% opinions. 17% tools. The subject saves how-tos they will never follow, perspectives they already hold, and software they will install, open once, and never return to. This pattern is classified internally as "Collector Syndrome." It is not dangerous, but it is very, very common. We have a whole wing.
     </div>
   </section>
 
+  <!-- INTERLUDE -->
+  <div class="interlude" id="int1">
+    <div class="interlude-text">&#9608;&#9608;&#9608; ACCESSING RESTRICTED FILES &#9608;&#9608;&#9608;</div>
+  </div>
+
   <!-- FINDING 03: GUILTY PLEASURES -->
   <section class="finding" id="f03">
+    <div class="stamp">VERIFIED</div>
     <div class="finding-id">EXHIBIT C / 10</div>
     <h2 class="finding-title">THE DISCREPANCY REPORT</h2>
     <div class="finding-desc">Average public engagement per saved item, by domain. This exhibit reveals a statistically significant gap between the subject's professional self-image and their actual saving behavior.</div>
     <div class="bar-chart" id="eng-domain-bars"></div>
-    <div class="finding-punchline">
-      > FIELD NOTE: The subject's "serious professional interests" (AI, design) average roughly 4,000 likes per saved item. Their health takes and political commentary average 20,000+. The Bureau would like the record to reflect that the subject's most private bookmarking behavior is indistinguishable from their aunt's Facebook feed. We do not say this to be cruel. We say it because it is our job.
+    <div class="finding-punchline" data-note="3">
+      > The subject's "serious professional interests" (AI, design) average roughly 4,000 likes per saved item. Their health takes and political commentary average 20,000+. The Bureau would like the record to reflect that the subject's most private bookmarking behavior is indistinguishable from their aunt's Facebook feed. We do not say this to be cruel. We say it because it is our job.
     </div>
   </section>
 
@@ -992,8 +1467,8 @@ html::after {
     <div class="finding-desc">Distribution of public engagement across saved items. Measures whether the subject discovers content or merely confirms what everyone else already found.</div>
     <div class="histogram" id="like-histogram"></div>
     <div style="margin-top: 12px;"></div>
-    <div class="finding-punchline">
-      > FIELD NOTE: Peak saving activity occurs in the 100-1K like bracket. This suggests the subject does possess genuine curatorial instinct and is not simply saving whatever is trending. However, the 276 items exceeding 10,000 likes indicate periodic lapses in which the subject saves things they could have found by opening literally any app. The Bureau classifies this as "I discovered this first" syndrome, complicated by occasional herd behavior. Prognosis: stable.
+    <div class="finding-punchline" data-note="4">
+      > Peak saving activity occurs in the 100-1K like bracket. This suggests the subject does possess genuine curatorial instinct and is not simply saving whatever is trending. However, the 276 items exceeding 10,000 likes indicate periodic lapses in which the subject saves things they could have found by opening literally any app. The Bureau classifies this as "I discovered this first" syndrome, complicated by occasional herd behavior. Prognosis: stable.
     </div>
   </section>
 
@@ -1005,19 +1480,25 @@ html::after {
     <div class="pyramid" id="loyalty-pyramid"></div>
     <div class="finding-desc" style="margin-top:16px; margin-bottom:0;">KNOWN ASSOCIATES (5+ intercepts):</div>
     <div class="bar-chart" id="top-authors" style="margin-top:8px;"></div>
-    <div class="finding-punchline">
-      > FIELD NOTE: Of 1,807 persons of interest, 1,458 (81%) were contacted exactly once. The subject saved their single best thought and moved on without acknowledgment. Only 55 individuals earned repeat engagement. The Bureau has seen this pattern before. It is technically not ghosting if you never followed them in the first place, but the effect is the same.
+    <div class="finding-punchline" data-note="5">
+      > Of 1,807 persons of interest, 1,458 (81%) were contacted exactly once. The subject saved their single best thought and moved on without acknowledgment. Only 55 individuals earned repeat engagement. The Bureau has seen this pattern before. It is technically not ghosting if you never followed them in the first place, but the effect is the same.
     </div>
   </section>
 
+  <!-- INTERLUDE -->
+  <div class="interlude" id="int2">
+    <div class="interlude-text">&#9608;&#9608;&#9608; RETRIEVING ARCHIVED MATERIALS &#9608;&#9608;&#9608;</div>
+  </div>
+
   <!-- FINDING 06: GREATEST HITS -->
   <section class="finding" id="f06">
+    <div class="stamp">DECLASSIFIED</div>
     <div class="finding-id">EXHIBIT F / 10</div>
     <h2 class="finding-title">ITEMS OF HIGHEST PUBLIC INTEREST</h2>
     <div class="finding-desc">The most widely-circulated materials in the subject's collection. Presented here as evidence of character.</div>
     <div class="ranked-list" id="top-bookmarks"></div>
-    <div class="finding-punchline">
-      > FIELD NOTE: The subject's most treasured saves include a Jackass cast member's sobriety anniversary, a baked goods conspiracy, and a philosophical inquiry into whether sheep could survive without human intervention. The Bureau does not editorialize. The Bureau does not need to.
+    <div class="finding-punchline" data-note="6">
+      > The subject's most treasured saves include a Jackass cast member's sobriety anniversary, a baked goods conspiracy, and a philosophical inquiry into whether sheep could survive without human intervention. The Bureau does not editorialize. The Bureau does not need to.
     </div>
   </section>
 
@@ -1027,13 +1508,19 @@ html::after {
     <h2 class="finding-title">TEMPORAL ACTIVITY LOG</h2>
     <div class="finding-desc">Annual save volume, plotted. The Bureau considers this a seismograph of the subject's relationship with the internet.</div>
     <div class="histogram" id="year-histogram"></div>
-    <div class="finding-punchline">
-      > FIELD NOTE: Activity peaked in 2021 at 467 intercepts. A marked decline followed in 2022-2023. The Bureau investigated several hypotheses: personal growth, app fatigue, a new hobby involving sunlight. None could be confirmed. Activity resumed in 2024, suggesting the 2022-2023 period was not a recovery but a remission. The condition is chronic.
+    <div class="finding-punchline" data-note="7">
+      > Activity peaked in 2021 at 467 intercepts. A marked decline followed in 2022-2023. The Bureau investigated several hypotheses: personal growth, app fatigue, a new hobby involving sunlight. None could be confirmed. Activity resumed in 2024, suggesting the 2022-2023 period was not a recovery but a remission. The condition is chronic.
     </div>
   </section>
 
+  <!-- INTERLUDE -->
+  <div class="interlude" id="int3">
+    <div class="interlude-text">[SECTION REVIEWED BY DEPUTY DIRECTOR]</div>
+  </div>
+
   <!-- FINDING 08: DIGITAL HOARDER -->
   <section class="finding" id="f08">
+    <div class="stamp">SEIZED</div>
     <div class="finding-id">EXHIBIT H / 10</div>
     <h2 class="finding-title">MATERIALS SEIZED</h2>
     <div class="finding-desc">External resources linked from the subject's collection. The Bureau notes these items were saved with apparent intent to revisit them. No evidence of revisitation was found.</div>
@@ -1043,8 +1530,8 @@ html::after {
       <div class="segment-bar" id="media-segments"></div>
       <div class="segment-legend" id="media-legend"></div>
     </div>
-    <div class="finding-punchline">
-      > FIELD NOTE: 106 open-source repositories saved with no record of cloning. 139 video links saved with no record of viewing. 23 academic papers saved with no record of reading past the abstract. The Bureau has assigned the subject a Digital Hoarding Index of 7.2 out of 10. This is within normal parameters. The normal parameters are very sad.
+    <div class="finding-punchline" data-note="8">
+      > 106 open-source repositories saved with no record of cloning. 139 video links saved with no record of viewing. 23 academic papers saved with no record of reading past the abstract. The Bureau has assigned the subject a Digital Hoarding Index of 7.2 out of 10. This is within normal parameters. The normal parameters are very sad.
     </div>
   </section>
 
@@ -1054,10 +1541,15 @@ html::after {
     <h2 class="finding-title">CROSS-REFERENCE MATRIX</h2>
     <div class="finding-desc">Format vs. subject domain, cross-tabulated. The Bureau uses this grid to predict behavior. The darkest cell is where the subject actually lives. Everything else is tourism.</div>
     <div id="heatmap-container"></div>
-    <div class="finding-punchline">
-      > FIELD NOTE: The intersection of "technique" and "AI" is where the subject resides most of the time. This is their apartment. The intersection of "opinion" and "media" is where they go to feel things. The rest of the grid represents places they visited once, took a photo, and left. The Bureau does not judge. The Bureau simply observes and takes very detailed notes.
+    <div class="finding-punchline" data-note="9">
+      > The intersection of "technique" and "AI" is where the subject resides most of the time. This is their apartment. The intersection of "opinion" and "media" is where they go to feel things. The rest of the grid represents places they visited once, took a photo, and left. The Bureau does not judge. The Bureau simply observes and takes very detailed notes.
     </div>
   </section>
+
+  <!-- INTERLUDE -->
+  <div class="interlude" id="int4">
+    <div class="interlude-text">&#9608;&#9608;&#9608; PREPARING FINAL ASSESSMENT &#9608;&#9608;&#9608;</div>
+  </div>
 
   <!-- FINDING 10: THE VERDICT -->
   <section class="finding" id="f10">
@@ -1084,7 +1576,7 @@ html::after {
     </div>
   </section>
 
-  <footer class="footer">
+  <footer class="footer" style="min-height:0; padding:24px 0;">
     BUREAU OF DIGITAL BEHAVIOR // BEHAVIORAL SCIENCES DIVISION // FORM 27-B STROKE 6<br>
     GENERATED BY FIELD THEORY CLI // CLASSIFICATION ENGINE: HAIKU 4.5 // UNAUTHORIZED VIEWING IS DISCOURAGED BUT NOT TECHNICALLY ILLEGAL
   </footer>
@@ -1093,6 +1585,15 @@ html::after {
 
 <script>
 /*__INJECTED_DATA__*/
+/*__INJECTED_NARRATION__*/
+
+// ── RESET ON LOAD ──────────────────────────────────────────────────────────
+window.scrollTo(0, 0);
+document.documentElement.style.scrollBehavior = 'auto';
+requestAnimationFrame(() => {
+  window.scrollTo(0, 0);
+  document.documentElement.style.scrollBehavior = '';
+});
 
 // ── UTILITIES ───────────────────────────────────────────────────────────────
 
@@ -1120,15 +1621,55 @@ function animateCount(el, target, duration = 1400, delay = 0) {
   }, delay);
 }
 
-// ── BOOT SEQUENCE ──────────────────────────────────────────────────────────
+// ── CINEMATIC BOOT SEQUENCE ────────────────────────────────────────────────
 
 const header = document.querySelector('.header');
-if (prefersReducedMotion) {
-  header.classList.add('booted');
-} else {
-  // Small delay so the page settles, then boot
-  setTimeout(() => header.classList.add('booted'), 100);
+const bootOverlay = document.getElementById('boot-overlay');
+const bootLines = bootOverlay.querySelectorAll('.boot-line');
+const bootProgress = bootOverlay.querySelector('.boot-progress');
+const bootFill = bootOverlay.querySelector('.boot-progress-fill');
+const bootBegin = document.getElementById('boot-begin');
+
+function runBootSequence() {
+  if (prefersReducedMotion) {
+    bootOverlay.remove();
+    header.classList.add('booted');
+    return;
+  }
+
+  // Stagger boot lines
+  bootLines.forEach((line, i) => {
+    setTimeout(() => line.classList.add('visible'), 300 + i * 500);
+  });
+
+  // Show and fill progress bar
+  const linesDone = 300 + bootLines.length * 500;
+  setTimeout(() => {
+    bootProgress.classList.add('visible');
+    setTimeout(() => { bootFill.style.width = '100%'; }, 100);
+  }, linesDone);
+
+  // After progress fills, show the BEGIN button
+  setTimeout(() => {
+    bootBegin.classList.add('visible');
+  }, linesDone + 1800);
+
+  // BEGIN button click — dismiss overlay, play boot audio, reveal page
+  bootBegin.addEventListener('click', () => {
+    bootBegin.style.pointerEvents = 'none';
+    bootOverlay.classList.add('dismissed');
+
+    // This click IS the user gesture — play boot narration immediately
+    if (typeof playBootNarration === 'function') playBootNarration();
+
+    setTimeout(() => {
+      bootOverlay.remove();
+      header.classList.add('booted');
+    }, 800);
+  });
 }
+
+runBootSequence();
 
 // ── TYPEWRITER for diagnosis ───────────────────────────────────────────────
 
@@ -1216,9 +1757,30 @@ const observer = new IntersectionObserver((entries) => {
       observer.unobserve(entry.target);
     }
   });
-}, { threshold: 0.1 });
+}, { threshold: 0.15 });
 
 document.querySelectorAll('.finding').forEach(f => observer.observe(f));
+
+// With scroll-snap, sections jump fully into view — re-check after a tick
+// in case the observer missed the initial state
+requestAnimationFrame(() => {
+  document.querySelectorAll('.finding').forEach(f => {
+    const rect = f.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0 && !f.classList.contains('visible')) {
+      f.classList.add('visible');
+      f.querySelectorAll('.bar-fill').forEach((bar, i) => {
+        setTimeout(() => { bar.style.width = bar.dataset.width; }, 400 + i * 70);
+      });
+      f.querySelectorAll('.hist-bar').forEach((bar, i) => {
+        setTimeout(() => { bar.style.height = bar.dataset.height; }, 400 + i * 100);
+      });
+      f.querySelectorAll('.segment').forEach((seg, i) => {
+        setTimeout(() => { seg.style.width = seg.dataset.width; }, 500 + i * 150);
+      });
+      observer.unobserve(f);
+    }
+  });
+});
 
 // ── RENDER FUNCTIONS ────────────────────────────────────────────────────────
 
@@ -1254,11 +1816,14 @@ function renderHistogram(containerId, items) {
 
 // ── HERO COUNTERS ───────────────────────────────────────────────────────────
 
-// Counters start after the stats row fades in (delay 1500ms + 200ms for transition start)
-animateCount(document.getElementById('hero-bookmarks'), DATA.totals.bookmarks, 1800, 1100);
-animateCount(document.getElementById('hero-authors'), DATA.totals.authors, 1400, 1700);
-animateCount(document.getElementById('hero-years'), parseInt(DATA.totals.lastYear) - parseInt(DATA.totals.firstYear), 800, 1700);
-animateCount(document.getElementById('hero-langs'), DATA.totals.languages, 600, 1700);
+// Counters start after boot completes + stats row fade-in (1500ms transition-delay)
+// Boot: 3300ms lines + 1800ms progress + 800ms fade = ~5900ms for .booted
+// Then stats-row transition-delay: 1500ms + 700ms transition = visible at ~8100ms
+const counterDelay = prefersReducedMotion ? 0 : 7500;
+animateCount(document.getElementById('hero-bookmarks'), DATA.totals.bookmarks, 1800, counterDelay);
+animateCount(document.getElementById('hero-authors'), DATA.totals.authors, 1400, counterDelay + 600);
+animateCount(document.getElementById('hero-years'), parseInt(DATA.totals.lastYear) - parseInt(DATA.totals.firstYear), 800, counterDelay + 600);
+animateCount(document.getElementById('hero-langs'), DATA.totals.languages, 600, counterDelay + 600);
 
 // ── FINDING 01: DOMAINS ─────────────────────────────────────────────────────
 
@@ -1400,6 +1965,361 @@ hm.rows.forEach(row => {
 });
 html += '</div>';
 hmEl.innerHTML = html;
+
+// ── SCROLL PROGRESS BAR ────────────────────────────────────────────────────
+
+const scrollBar = document.getElementById('scroll-progress');
+const scrollLabel = document.getElementById('scroll-progress-label');
+let ticking = false;
+
+function updateScrollProgress() {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = docHeight > 0 ? (scrollTop / docHeight * 100) : 0;
+  scrollBar.style.width = pct + '%';
+  scrollLabel.textContent = 'DOSSIER: ' + Math.round(pct) + '%';
+  scrollLabel.classList.toggle('visible', pct > 2);
+  ticking = false;
+}
+
+window.addEventListener('scroll', () => {
+  if (!ticking) { ticking = true; requestAnimationFrame(updateScrollProgress); }
+}, { passive: true });
+
+// ── INTERLUDE OBSERVER ─────────────────────────────────────────────────────
+
+const interludeObs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      interludeObs.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.3 });
+
+document.querySelectorAll('.interlude').forEach(el => interludeObs.observe(el));
+
+// (section flash removed — too subtle, could cause visual artifacts)
+
+// ── SLIDE NAVIGATION (arrow keys) ──────────────────────────────────────────
+
+const allSlides = [...document.querySelectorAll('.header, .finding, .interlude')];
+let currentSlideIdx = 0;
+const navHint = document.getElementById('nav-hint');
+const slideCounter = document.getElementById('slide-counter');
+
+function updateSlideCounter() {
+  if (slideCounter) {
+    slideCounter.textContent = (currentSlideIdx + 1) + ' / ' + allSlides.length;
+    slideCounter.classList.toggle('visible', currentSlideIdx > 0);
+  }
+}
+
+function goToSlide(idx) {
+  idx = Math.max(0, Math.min(idx, allSlides.length - 1));
+  if (idx === currentSlideIdx) return;
+  currentSlideIdx = idx;
+  allSlides[idx].scrollIntoView({ behavior: 'smooth' });
+  updateSlideCounter();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+    e.preventDefault();
+    goToSlide(currentSlideIdx + 1);
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    goToSlide(currentSlideIdx - 1);
+  }
+});
+
+// Track current slide via scroll
+const slideObs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const idx = allSlides.indexOf(entry.target);
+      if (idx >= 0) { currentSlideIdx = idx; updateSlideCounter(); }
+    }
+  });
+}, { threshold: 0.5 });
+allSlides.forEach(s => slideObs.observe(s));
+
+// Show nav hint after boot completes
+setTimeout(() => { if (navHint) navHint.classList.add('visible'); },
+  prefersReducedMotion ? 500 : 6000);
+// Hide nav hint on first navigation
+function hideNavHint() {
+  if (navHint) navHint.classList.remove('visible');
+  document.removeEventListener('keydown', hideNavHint);
+}
+document.addEventListener('keydown', hideNavHint);
+
+// ── AUDIO SYSTEM — multi-clip title → note sequencing ──────────────────────
+
+const audioBtn = document.getElementById('audio-control');
+let audioEnabled = false;
+const playedSections = new Set();
+const audioEls = {};
+const clipMeta = {};  // word timestamps + syncSkip per clip
+let currentAudio = null;
+let syncRAF = null;
+let noteTimeout = null;
+
+// Section → clip key mappings
+const titleMap = {
+  f01: 'title-a', f02: 'title-b', f03: 'title-c', f04: 'title-d',
+  f05: 'title-e', f06: 'title-f', f07: 'title-g', f08: 'title-h',
+  f09: 'title-i', f10: 'title-j',
+};
+const noteMap = {
+  f01: 'note-a', f02: 'note-b', f03: 'note-c', f04: 'note-d',
+  f05: 'note-e', f06: 'note-f', f07: 'note-g', f08: 'note-h',
+  f09: 'note-i', f10: 'note-j',
+};
+const interludeMap = {
+  int1: 'interlude-1', int2: 'interlude-2', int3: 'interlude-3', int4: 'interlude-4',
+};
+
+// ── Word wrapping for sync
+
+function wrapFieldNoteWords(el) {
+  if (el.dataset.wrapped) return;
+  const text = el.textContent;
+  const prefixMatch = text.match(/^(\s*>\s*)/);
+  const prefix = prefixMatch ? prefixMatch[1] : '';
+  const content = text.slice(prefix.length).trim();
+  const words = content.split(/\s+/).filter(Boolean);
+
+  let html = '<span class="fn-prefix">' + prefix + '</span>';
+  words.forEach(w => { html += '<span class="nw nw-pending">' + w + '</span> '; });
+  el.innerHTML = html;
+  el.dataset.wrapped = 'true';
+}
+
+function startWordSync(el, words, audio, skip) {
+  const spans = el.querySelectorAll('.nw');
+  const syncWords = words.slice(skip || 0);
+  if (!spans.length || !syncWords.length) return;
+
+  function tick() {
+    if (audio.paused || audio.ended) {
+      if (audio.ended) spans.forEach(s => { s.classList.remove('nw-pending', 'nw-active'); s.classList.add('nw-spoken'); });
+      return;
+    }
+    const t = audio.currentTime;
+    for (let i = 0; i < spans.length && i < syncWords.length; i++) {
+      const w = syncWords[i];
+      const s = spans[i];
+      if (t >= w.start && t <= w.end + 0.08) {
+        s.classList.remove('nw-pending');
+        s.classList.add('nw-active');
+      } else if (t > w.end) {
+        s.classList.remove('nw-pending', 'nw-active');
+        s.classList.add('nw-spoken');
+      }
+    }
+    syncRAF = requestAnimationFrame(tick);
+  }
+  syncRAF = requestAnimationFrame(tick);
+}
+
+function stopAllAudio() {
+  if (syncRAF) { cancelAnimationFrame(syncRAF); syncRAF = null; }
+  if (noteTimeout) { clearTimeout(noteTimeout); noteTimeout = null; }
+  if (currentAudio && !currentAudio.paused) { currentAudio.pause(); currentAudio.currentTime = 0; }
+}
+
+function playClip(key) {
+  const audio = getAudio(key);
+  if (!audio) return Promise.reject();
+  stopAllAudio();
+  currentAudio = audio;
+  return currentAudio.play();
+}
+
+// ── Play full section sequence: title → 1s pause → field note with sync
+
+function playSectionNarration(sectionId) {
+  if (!audioEnabled || playedSections.has(sectionId)) return;
+  playedSections.add(sectionId);
+
+  // Interludes — just play the clip
+  const intKey = interludeMap[sectionId];
+  if (intKey && clipSources[intKey]) {
+    playClip(intKey).catch(() => {});
+    return;
+  }
+
+  const titleKey = titleMap[sectionId];
+  const noteKey = noteMap[sectionId];
+  if (!titleKey && !noteKey) return;
+
+  // Step 1: Play title announcement
+  if (titleKey && clipSources[titleKey]) {
+    playClip(titleKey).then(() => {
+      const titleAudio = getAudio(titleKey);
+      titleAudio.addEventListener('ended', function onEnd() {
+        titleAudio.removeEventListener('ended', onEnd);
+        noteTimeout = setTimeout(() => playFieldNote(sectionId, noteKey), 1000);
+      });
+    }).catch(() => {
+      noteTimeout = setTimeout(() => playFieldNote(sectionId, noteKey), 500);
+    });
+  } else if (noteKey) {
+    playFieldNote(sectionId, noteKey);
+  }
+}
+
+function playFieldNote(sectionId, noteKey) {
+  if (!clipSources[noteKey] || !audioEnabled) return;
+  const audio = getAudio(noteKey);
+  if (!audio) return;
+
+  const finding = document.getElementById(sectionId);
+  let targetEl;
+  if (sectionId === 'f10') {
+    targetEl = finding ? finding.querySelector('.verdict-redemption') : null;
+  } else {
+    targetEl = finding ? finding.querySelector('.finding-punchline') : null;
+  }
+
+  stopAllAudio();
+  currentAudio = audio;
+  const meta = clipMeta[noteKey];
+
+  if (targetEl && meta && meta.words) {
+    wrapFieldNoteWords(targetEl);
+    currentAudio.play().then(() => {
+      startWordSync(targetEl, meta.words, currentAudio, meta.syncSkip || 0);
+    }).catch(() => {});
+  } else {
+    currentAudio.play().catch(() => {});
+  }
+
+  // When the last note finishes, trigger end credits
+  if (sectionId === 'f10') {
+    currentAudio.addEventListener('ended', function onLast() {
+      currentAudio.removeEventListener('ended', onLast);
+      triggerEndCredits();
+    });
+  }
+}
+
+// ── Initialize audio — lazy loading (instant startup) ──────────────────────
+
+const hasNarration = typeof NARRATION !== 'undefined' && NARRATION && NARRATION.clips;
+const clipSources = {};  // base64 strings — Audio objects created on demand
+
+if (hasNarration) {
+  // Index metadata only — Audio objects created lazily on first play
+  for (const [key, clip] of Object.entries(NARRATION.clips)) {
+    clipSources[key] = typeof clip === 'string' ? clip : clip.audio;
+    if (clip.words) clipMeta[key] = { words: clip.words, syncSkip: clip.syncSkip || 0 };
+  }
+
+  audioEnabled = true;
+  audioBtn.classList.add('active');
+  audioBtn.innerHTML = '&#9673;';
+
+  audioBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    audioEnabled = !audioEnabled;
+    audioBtn.classList.toggle('active', audioEnabled);
+    audioBtn.innerHTML = audioEnabled ? '&#9673;' : '&#9678;';
+    if (!audioEnabled) stopAllAudio();
+  });
+
+  initNarrationTriggers();
+} else {
+  audioBtn.style.display = 'none';
+}
+
+// Lazy Audio factory — creates and caches Audio objects on first use
+function getAudio(key) {
+  if (audioEls[key]) return audioEls[key];
+  if (!clipSources[key]) return null;
+  const audio = new Audio('data:audio/mpeg;base64,' + clipSources[key]);
+  audioEls[key] = audio;
+  return audio;
+}
+
+// ── Narration triggers ─────────────────────────────────────────────────────
+
+// Called by the boot BEGIN button click — guaranteed user gesture
+function playBootNarration() {
+  if (!audioEnabled || !clipSources['boot']) return;
+  playedSections.add('boot');
+  const audio = getAudio('boot');
+  if (!audio) return;
+  currentAudio = audio;
+  currentAudio.play().catch(() => {});
+}
+
+function initNarrationTriggers() {
+
+  // Scroll-triggered narration
+  const narrationObs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting || !audioEnabled) return;
+      playSectionNarration(entry.target.id);
+    });
+  }, { threshold: 0.4 });
+
+  document.querySelectorAll('.finding, .interlude[id]').forEach(f => narrationObs.observe(f));
+
+  // Check if any sections are already visible at startup
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.finding, .interlude[id]').forEach(f => {
+      const rect = f.getBoundingClientRect();
+      if (rect.top >= 0 && rect.top < window.innerHeight * 0.6) {
+        playSectionNarration(f.id);
+      }
+    });
+  });
+}
+
+// ── END CREDITS ────────────────────────────────────────────────────────────
+
+const endCredits = document.getElementById('end-credits');
+const vhsLine = document.getElementById('vhs-line');
+let endCreditsDone = false;
+
+function triggerEndCredits() {
+  if (endCreditsDone || prefersReducedMotion) return;
+  endCreditsDone = true;
+  setTimeout(() => {
+    vhsLine.classList.add('active');
+    setTimeout(() => {
+      endCredits.classList.add('active');
+      setTimeout(() => vhsLine.classList.remove('active'), 1500);
+    }, 2000);
+  }, 2000);
+}
+
+// Also trigger if user scrolls to footer without audio
+const footerEl = document.querySelector('.footer');
+if (footerEl) {
+  const endObs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !hasNarration) {
+        setTimeout(triggerEndCredits, 4000);
+        endObs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.9 });
+  endObs.observe(footerEl);
+}
+
+// Click to dismiss, scroll to top
+endCredits.addEventListener('click', () => {
+  endCredits.classList.remove('active');
+  endCreditsDone = false;
+  playedSections.clear();
+  stopAllAudio();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  currentSlideIdx = 0;
+  updateSlideCounter();
+});
 
 </script>
 </body>
